@@ -41,6 +41,7 @@ static void _led_loop_control(uint8_t direct)
     }
 }
 
+static void change_state(void);
 // LED闪烁（修复for循环C99语法）
 static void led_blink(void)
 {
@@ -74,11 +75,12 @@ static void key_led_fsm_disptch(EVENT_TYPE event)
         if(LED_DELAY_TIME < 100) LED_DELAY_TIME = 100;
         break;
     case kUP:
-        if (state_machine.state == CIRCLE)
-            state_machine.state = FALLING;
-        state_machine.state = (STATE_TYPE)(state_machine.state + 1);
-        // 状态越界保护，防止超出枚举范围
-        if(state_machine.state > STOP) state_machine.state = FALLING;
+        // if (state_machine.state == CIRCLE)
+        //     state_machine.state = FALLING;
+        // state_machine.state = (STATE_TYPE)(state_machine.state + 1);
+        // // 状态越界保护，防止超出枚举范围
+        // if(state_machine.state > STOP) state_machine.state = FALLING;
+        change_state();
         break;
     case KNONE:
         break;
@@ -98,7 +100,7 @@ static void change_state(void)
         state_machine.state = STOP;
         break;
         case STOP:
-        state_machine.state = RISING;
+        state_machine.state = FALLING;
         break;
     }
 }
@@ -109,7 +111,8 @@ void key_led_one_loop(void)
     key_led_one_init();
     while (1)
     {
-        //key_led_fsm_disptch((EVENT_TYPE)KEY_Scan(0));
+        key_led_fsm_disptch((EVENT_TYPE)KEY_Scan(0));
+
         switch (state_machine.state)
         {
         case FALLING:
@@ -119,13 +122,25 @@ void key_led_one_loop(void)
             _led_loop_control(1);
             break;
         case CIRCLE:
+            for(int i = 0; i < 8; i += 2)
+            {
+                led_funcs[i](0);
+                delay_ms(LED_DELAY_TIME);
+                led_funcs[i](1);
+            }
+            for(int i = 1; i < 8; i += 2)
+            {
+                led_funcs[8 - i](0);
+                delay_ms(LED_DELAY_TIME);
+                led_funcs[8 - i](1);
+            }
             break;
         case STOP:
-            delay_ms(LED_DELAY_TIME);
+            //delay_ms(LED_DELAY_TIME);// 这里不需要延时，直接进入下一轮循环即可，不然按键可能识别不到
             break;
         }
-        change_state();
-        delay_ms(10);
+        //change_state();
+        delay_ms(100);
     }
 }
 
