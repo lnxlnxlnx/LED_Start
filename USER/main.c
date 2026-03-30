@@ -19,11 +19,11 @@ int main(void)
 	while (1)
 	{
 		key_led_one_loop();
-		for (uint8_t i = 0; i < 8; i++)
-		{
-			led_funcs[i](0);
-			delay_ms(200);
-			led_funcs[i](1);
-		}
+//		for (uint8_t i = 0; i < 8; i++)
+//		{
+//			led_funcs[i](0);
+//			delay_ms(200);
+//			led_funcs[i](1);
+//		}
 	}
 }

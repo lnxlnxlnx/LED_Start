@@ -17,27 +17,27 @@ static void _led_loop_control(uint8_t direct)
     int i; // 移到循环外定义，兼容C89
     if (!direct)
     {
-        for (;;)
-        {
+        //for (;;)
+        //{
             for (i = 0; i < 8; i++)
             {
                 led_funcs[i](0);
                 delay_ms(LED_DELAY_TIME);
                 led_funcs[i](1);
             }
-        }
+        //}
     }
     else
     {
-        for (;;)
-        {
+        //for (;;)
+        //{
             for (i = 0; i < 8; i++)
             {
                 led_funcs[7 - i](0);
                 delay_ms(LED_DELAY_TIME);
                 led_funcs[7 - i](1);
             }
-        }
+        //}
     }
 }
 
@@ -85,13 +85,31 @@ static void key_led_fsm_disptch(EVENT_TYPE event)
     }
 }
 
+static void change_state(void)
+{
+    switch (state_machine.state)
+    {    case FALLING:
+        state_machine.state = RISING;
+        break;
+        case RISING:
+        state_machine.state = CIRCLE;
+        break;
+        case CIRCLE:
+        state_machine.state = STOP;
+        break;
+        case STOP:
+        state_machine.state = RISING;
+        break;
+    }
+}
+
 // 主循环函数（外部调用）
 void key_led_one_loop(void)
 {
     key_led_one_init();
     while (1)
     {
-        key_led_fsm_disptch((EVENT_TYPE)KEY_Scan(0));
+        //key_led_fsm_disptch((EVENT_TYPE)KEY_Scan(0));
         switch (state_machine.state)
         {
         case FALLING:
@@ -106,6 +124,7 @@ void key_led_one_loop(void)
             delay_ms(LED_DELAY_TIME);
             break;
         }
+        change_state();
         delay_ms(10);
     }
 }
