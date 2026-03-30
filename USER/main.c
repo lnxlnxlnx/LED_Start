@@ -2,6 +2,7 @@
 #include "delay.h"
 #include "usart.h"
 #include "led.h"
+#include "key_led_one.h"
 
 // STM32F103核心板例程
 // 库函数版本例程
@@ -17,6 +18,7 @@ int main(void)
 
 	while (1)
 	{
+		key_led_one_loop();
 		for (uint8_t i = 0; i < 8; i++)
 		{
 			led_funcs[i](0);
