@@ -24,5 +24,20 @@
 
 void LED_Init(void);//初始化
 
+/* LED操作函数封装 */
+void led0_operate(uint8_t val);
+void led1_operate(uint8_t val);
+void led2_operate(uint8_t val);
+void led3_operate(uint8_t val);
+void led4_operate(uint8_t val);
+void led5_operate(uint8_t val);
+void led6_operate(uint8_t val);
+void led7_operate(uint8_t val);
+
+typedef void (*LED_Operate)(uint8_t val);
+
+extern LED_Operate led_funcs[];
+
+void led_loop_control(void);//测试用循环控制函数
 		 				    
 #endif

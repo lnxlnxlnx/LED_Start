@@ -1,4 +1,5 @@
 #include "led.h"
+#include "delay.h"
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -32,3 +33,34 @@ void LED_Init(void)
     GPIO_SetBits(GPIOC, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 |
                    GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
 }
+void led0_operate(uint8_t val) { LED0 = val; }
+void led1_operate(uint8_t val) { LED1 = val; }
+void led2_operate(uint8_t val) { LED2 = val; }
+void led3_operate(uint8_t val) { LED3 = val; }
+void led4_operate(uint8_t val) { LED4 = val; }
+void led5_operate(uint8_t val) { LED5 = val; }
+void led6_operate(uint8_t val) { LED6 = val; }
+void led7_operate(uint8_t val) { LED7 = val; }
+
+LED_Operate led_funcs[] = {
+    led0_operate, led1_operate, led2_operate, led3_operate,
+    led4_operate, led5_operate, led6_operate, led7_operate
+};
+/* 测试用循环控制函数 */
+void led_loop_control(void)
+{
+    uint8_t i;
+    for (i = 0; i < 8; i++)
+    {
+        led_funcs[i](0);
+        delay_ms(200);
+        led_funcs[i](1);
+    }
+    for (i = 0; i < 8; i++)
+        led_funcs[i](0);
+    delay_ms(1000);
+    for (i = 0; i < 8; i++)
+        led_funcs[i](1);
+}
+ 
+
