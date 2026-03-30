@@ -66,7 +66,8 @@
 
 
 void NVIC_Configuration(void);
-
+void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM);
+void MY_NVIC_Init(u8 NVIC_PreemptionPriority,u8 NVIC_SubPriority,u8 NVIC_Channel,u8 NVIC_Group);
 
 
 #endif

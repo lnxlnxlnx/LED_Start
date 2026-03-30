@@ -4,6 +4,11 @@
 uint16_t LED_DELAY_TIME = 200;
 STATE_MACHINE state_machine = {FALLING, KNONE};
 
+static void exti_init(void){
+    KEY_Init();
+    
+}
+
 // 静态初始化函数
 static void key_led_one_init(void)
 {
