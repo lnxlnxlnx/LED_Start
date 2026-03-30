@@ -1,0 +1,98 @@
+# STM32 Project .gitignore
+
+# Build artifacts
+*.o
+*.obj
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.d
+*.su
+
+# IDE files
+*.project
+*.cproject
+*.settings
+*.launch
+*.metadata
+
+# STM32CubeMX files
+*.ioc
+
+# Debug files
+Debug/
+Release/
+build/
+out/
+
+# Doxygen documentation
+doc/
+doxygen/
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# IDE specific
+.vscode/
+.idea/
+
+# Keil uVision
+*.uvprojx
+*.uvoptx
+*.uvguix
+
+# IAR Embedded Workbench
+*.ewp
+*.eww
+*.ewd
+*.dep
+
+# ARM compiler generated files
+*.axf
+*.crf
+*.htm
+*.lnp
+*.plg
+*.rpt
+
+# ST-Link debug files
+ST-Link/
+
+# Test files
+*.test
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# Makefile
+Makefile
+makefile
+
+# Python
+__pycache__/
+*.pyc
+
+# Header files (if generated)
+*.h.gch
