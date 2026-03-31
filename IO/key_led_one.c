@@ -1,19 +1,23 @@
 #include "key_led_one.h"
+#include "exti.h"
 
 // 全局变量定义
 uint16_t LED_DELAY_TIME = 200;
 STATE_MACHINE state_machine = {FALLING, KNONE};
+EVENT_TYPE curent_event = KNONE;
 
-static void exti_init(void){
-    KEY_Init();
+// static void exti_init(void){
+//     KEY_Init();
+//     Ex_NVIC_Config()
     
-}
+// }
 
 // 静态初始化函数
 static void key_led_one_init(void)
 {
     LED_Init();
-    KEY_Init();
+    //KEY_Init();
+    EXTIX_Init();
 }
 
 // LED循环控制（修复for循环C99语法）
@@ -61,9 +65,9 @@ static void led_blink(void)
 }
 
 // 状态机分发（原代码逻辑不变）
-static void key_led_fsm_disptch(EVENT_TYPE event)
+static void key_led_fsm_disptch()
 {
-    state_machine.event = event;
+    state_machine.event = curent_event;
     switch (state_machine.event)
     {
     case K0:
@@ -90,6 +94,7 @@ static void key_led_fsm_disptch(EVENT_TYPE event)
     case KNONE:
         break;
     }
+    curent_event = KNONE;
 }
 
 static void change_state(void)
@@ -116,8 +121,8 @@ void key_led_one_loop(void)
     key_led_one_init();
     while (1)
     {
-        key_led_fsm_disptch((EVENT_TYPE)KEY_Scan(0));
-
+        //key_led_fsm_disptch((EVENT_TYPE)KEY_Scan(0));
+        key_led_fsm_disptch();
         switch (state_machine.state)
         {
         case FALLING:
