@@ -3,9 +3,20 @@
 #include "usart.h"
 #include "led.h"
 #include "key_led_one.h"
-#define LOG_TAG "MAIN"
+//#define LOG_TAG "MAIN"
+/**
+ * Log default configuration for EasyLogger.
+ * NOTE: Must defined before including the <elog.h>
+ */
+#define MAIN_LOG_LVL ELOG_LVL_WARN
+#if !defined(LOG_TAG)
+    #define LOG_TAG                    "MAIN"
+#endif
+#undef LOG_LVL
+#if defined(MAIN_LOG_LVL)
+    #define LOG_LVL                    MAIN_LOG_LVL
+#endif
 #include <elog.h>
-
 // STM32F103核心板例程
 // 库函数版本例程
 /********** mcudev.taobao.com 出品  ********/
