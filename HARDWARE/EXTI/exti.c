@@ -46,9 +46,9 @@ void EXTI0_IRQHandler(void)
 	// 	LED1=!LED1;	
 	// }
 	//curent_event = kUP; // 设置当前事件为kUP
-	if (curent_event == KNONE) {
+	//if (curent_event == KNONE) {
     	curent_event = kUP;
-	}
+	//}
 	EXTI->PR=1<<0;  //清除LINE0上的中断标志位
 }
 //外部中断2服务程序

@@ -84,11 +84,6 @@ static void key_led_fsm_disptch()
         if(LED_DELAY_TIME < 100) LED_DELAY_TIME = 100;
         break;
     case kUP:
-        // if (state_machine.state == CIRCLE)
-        //     state_machine.state = FALLING;
-        // state_machine.state = (STATE_TYPE)(state_machine.state + 1);
-        // // 状态越界保护，防止超出枚举范围
-        // if(state_machine.state > STOP) state_machine.state = FALLING;
         change_state();
         break;
     case KNONE:
