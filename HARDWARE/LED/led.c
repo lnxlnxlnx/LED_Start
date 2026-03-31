@@ -1,6 +1,6 @@
 #include "led.h"
 #include "delay.h"
-#define LED_LOG_LVL ELOG_LVL_ERROR
+#include "project_log_config.h"
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "LED"
 #endif

@@ -3,12 +3,9 @@
 #include "usart.h"
 #include "led.h"
 #include "key_led_one.h"
-//#define LOG_TAG "MAIN"
-/**
- * Log default configuration for EasyLogger.
- * NOTE: Must defined before including the <elog.h>
- */
-#define MAIN_LOG_LVL ELOG_LVL_WARN
+#include "project_log_config.h"
+#include "rtc.h"
+
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "MAIN"
 #endif
@@ -37,8 +34,9 @@ int main(void)
 	LED_Init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	uart_init(115200);	  // 串口初始化为9600
+	RTC_Init();			  // RTC初始化
 	elog_init();
-
+	elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
 	elog_start();
 	_test_elog(); // 测试elog输出
 
