@@ -51,7 +51,7 @@ static void _led_loop_control(uint8_t direct)
 }
 
 static void change_state(void);
-// LED闪烁（修复for循环C99语法）
+// LED闪烁
 static void led_blink(void)
 {
     int i; // 移到循环外定义，兼容C89

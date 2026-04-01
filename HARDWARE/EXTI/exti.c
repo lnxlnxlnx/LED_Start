@@ -40,11 +40,6 @@ extern EVENT_TYPE curent_event;
 void EXTI0_IRQHandler(void)
 {
     delay_ms(10);    //消抖
-	// if(WK_UP==1)     //KEY_UP按键
-	// {	  
-	// 	LED0=!LED0;
-	// 	LED1=!LED1;	
-	// }
 	//curent_event = kUP; // 设置当前事件为kUP
 	//if (curent_event == KNONE) {
     	curent_event = kUP;
@@ -55,10 +50,6 @@ void EXTI0_IRQHandler(void)
 void EXTI2_IRQHandler(void)
 {
     delay_ms(10);    //消抖			 
-    // if(KEY2==0)	     //KEY2按键
-    // {
-    //    BEEP=!BEEP;
-    // }
 	curent_event = K2;
     EXTI->PR=1<<2;     //清除LINE2上的中断标志位  
 }
@@ -68,12 +59,10 @@ void EXTI2_IRQHandler(void)
 	delay_ms(10);   //消抖			 
 	if(KEY0==0)	    //KEY0按键
 	{
-		//LED0=!LED0;
 		curent_event = K0;
 	}
  	if(KEY1==0)	    //KEY1按键
 	{
-		//LED1=!LED1;
 		curent_event = K1;
 	}
 	EXTI->PR=1<<8;  //清除LINE8上的中断标志位  
