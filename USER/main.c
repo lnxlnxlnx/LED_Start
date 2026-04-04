@@ -6,6 +6,7 @@
 #include "project_log_config.h"
 #include "rtc.h"
 #include "dac.h"
+#include "test_vector.h"
 
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "MAIN"
@@ -33,6 +34,7 @@ int main(void)
 	u8 t = 0;
 	delay_init(); // 延时函数初始化
 	LED_Init();
+	mem_init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	uart_init(115200);	  // 串口初始化为9600
 	RTC_Init();			  // RTC初始化
@@ -42,7 +44,7 @@ int main(void)
 	elog_start();
 	_test_elog(); // 测试elog输出
 	//Generate_SineWave();
-
+	test_xvector(); // 测试XVector
 	while (1)
 	{
 		key_led_one_loop();

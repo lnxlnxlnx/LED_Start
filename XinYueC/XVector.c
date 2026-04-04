@@ -2,11 +2,14 @@
 #if XVector_ON
 #include<stdlib.h>
 #include<string.h>
+
 XVector* XVector_create(size_t typeSize)
 {
 	if (ISNULL(typeSize, ""))
 		return NULL;
+	printf("enter XVector_create\r\n");
 	XVector* this_vector = XMemory_malloc(sizeof(XVector));
+	printf("exit malloc XVector\r\n");
 	XVector_init(this_vector,typeSize);
 	return this_vector;
 }
