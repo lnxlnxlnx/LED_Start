@@ -7,7 +7,7 @@
 #include "rtc.h"
 #include "dac.h"
 #include "test_vector.h"
-
+#include "test_quickSort.h"
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "MAIN"
 #endif
@@ -34,7 +34,7 @@ int main(void)
 	u8 t = 0;
 	delay_init(); // 延时函数初始化
 	LED_Init();
-	mem_init();
+	//mem_init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	uart_init(115200);	  // 串口初始化为9600
 	RTC_Init();			  // RTC初始化
@@ -43,15 +43,10 @@ int main(void)
 	elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
 	elog_start();
 	_test_elog(); // 测试elog输出
-	//Generate_SineWave();
 	test_xvector(); // 测试XVector
+	test_arr_quicksort(); // 测试数组快速排序
 	while (1)
 	{
 		key_led_one_loop();
-		// Dac_Set_Vol(2000); // 设置DAC输出电压为2.0V
-		// delay_ms(100);
-		// Dac_Set_Vol(200); // 设置DAC输出电压为1.0V
-		// delay_ms(100);
-		//Output_SineWave(); // 输出正弦波
 	}
 }
