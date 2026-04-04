@@ -16,7 +16,6 @@ EVENT_TYPE curent_event = KNONE;
 static void key_led_one_init(void)
 {
     LED_Init();
-    //KEY_Init();
     EXTIX_Init();
 }
 
@@ -144,7 +143,6 @@ void key_led_one_loop(void)
             //delay_ms(LED_DELAY_TIME);// 这里不需要延时，直接进入下一轮循环即可，不然按键可能识别不到
             break;
         }
-        //change_state();
         delay_ms(100);
     }
 }
