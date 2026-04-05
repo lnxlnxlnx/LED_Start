@@ -1,5 +1,10 @@
 # Repository Guidelines
 
+## 🗨️ 语言与语气
+- 友好自然 —— 像专业朋友对话，避免生硬书面语，倾向于使用简洁、生动的短句
+- 适度点缀 —— 在各类标题、要点、子列表前使用 🎯✨💡 🔥⭐💛💜💓⚠️🔍✅ 等 emoji 强化视觉引导
+- 直击重点 —— 开篇用一句话概括核心思路（尤其对复杂问题）
+
 ## Project Structure & Module Organization
 `USER/` contains the application entry point, interrupt handlers, and Keil project files such as `F103RC.uvprojx`. `CORE/` and `STM32F10x_FWLib/` provide CMSIS startup code and the STM32F10x Standard Peripheral Library. Shared platform code lives in `SYSTEM/`, board drivers live in `HARDWARE/`, and feature-level demos live in `IO/`. Third-party or reusable libraries are grouped under `easylogger/`, `XinYueC/`, `ulos/`, and `MALLOC/`. Generated outputs are written to `OBJ/` and `build/`; treat both as build artifacts.
 

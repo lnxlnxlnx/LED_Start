@@ -55,6 +55,7 @@ void XSwap(void* valOne, void* valTwo, const int typeSize)//交换任意数据�
 				perror("交换函数创建p临时空间失败");
 				//exit(-1);
 				//return -1;
+				xassert_failed("valMiddle != NULL", "交换函数创建临时空间失败", __FILE__, __FUNCTION__, __LINE__);
 			}
 			memcpy(valMiddle, valOne, typeSize);
 			memcpy(valOne, valTwo, typeSize);

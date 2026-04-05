@@ -17,6 +17,7 @@ static void XVtableEnlargeCapacity(XVtable* this_vtable)
 			perror("动态创建虚函数表失败\n");
 			//exit(-1);
 			//return -1;
+			xassert_failed("this_vtable->data != NULL", "动态创建虚函数表失败", __FILE__, __FUNCTION__, __LINE__);
 		}
 		else
 		{
@@ -33,6 +34,7 @@ static void XVtableEnlargeCapacity(XVtable* this_vtable)
 			perror("扩容失败虚函数失败\n");
 			//exit(-1);
 			//return -1;
+			xassert_failed("this_vtable->data != NULL", "扩容失败虚函数失败", __FILE__, __FUNCTION__, __LINE__);
 		}
 		else
 		{

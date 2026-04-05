@@ -224,6 +224,7 @@ bool VXVector_resize(XVector* this_vector, size_t size)
 		{
 			//perror("扩容失败vector");
 			//exit(-1);
+			xassert_failed("m_data != NULL", "扩容失败vector", __FILE__, __FUNCTION__, __LINE__);
 			XContainerCapacity(this_vector) = 0;
 			XContainerSize(this_vector) = 0;
 			return false;

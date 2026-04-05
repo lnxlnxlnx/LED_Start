@@ -45,7 +45,7 @@ void LED_Init(void)
                    log_w("LED_Init", "LED_Init OK");
                    log_i("LED_Init", "LED_Init OK");
 }
-void led0_operate(uint8_t val) { LED0 = val; }
+void led0_operate(uint8_t val) { LED0 = val; }  //DEPRECATED:其实可以用宏拼接?
 void led1_operate(uint8_t val) { LED1 = val; }
 void led2_operate(uint8_t val) { LED2 = val; }
 void led3_operate(uint8_t val) { LED3 = val; }

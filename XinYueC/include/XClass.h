@@ -26,7 +26,14 @@ typedef struct XClass
 #define isNULLInfo(args,str) args,#args,str ,__FUNCTION__,__FILE__,__LINE__
 #define ISNULL(args,str)(ArgIsNULL(isNULLInfo(args,str)))
 bool ArgIsNULL(const void* args/*参数数值*/, const char* argsName/*参数名字*/, const char* str/*附加参数*/, const char* funcName/*函数名字*/, const char* filePath/*所在文件路径*/, int line/*所在行号*/);
-#define XAssert(args,str) {if(ISNULL(args,str)) //exit(-1);}
+void xassert_failed(const char* expr, const char* str, const char* filePath, const char* funcName, int line);
+/* NOTE: 统一断言失败入口。后续替代策略可在 xassert_failed() 内切换：调试停机、发布复位、或上报后软恢复。 */
+#define XAssert(args,str) \
+	do { \
+		if (ISNULL(args,str)) { \
+			xassert_failed(#args, str, __FILE__, __FUNCTION__, __LINE__); \
+		} \
+	} while (0)
 
 //定义虚函数表
 #define XVTABLE_CREAT(Vtable)  \

@@ -7,7 +7,7 @@
 //打乱数组元素-乱序
 void XDerangement(void* LParray, const size_t nSize, const size_t TypeSize)
 {
-	srand((unsigned int) 42);
+	srand((unsigned int) 42); //HACK:暂时使用42
 	for (size_t i = nSize; i>1; i--)
 	{
 		size_t nSel = rand() % i;
