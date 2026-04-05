@@ -18,14 +18,14 @@ static XMemory global_Memory = {mymalloc, myfree, myrealloc, XMemory_calloc_isMa
 
 void *XMemory_malloc(size_t size)
 {
-    printf("enter XMemory_malloc\r\n");
+    //printf("enter XMemory_malloc\r\n");
 
     if (global_Memory.allocate != NULL)
     {
-        printf("global_Memory.allocate is not NULL\r\n");
+        //printf("global_Memory.allocate is not NULL\r\n");
         return global_Memory.allocate(size);
     }
-	printf("global_Memory.allocate is NULL\r\n");
+	//printf("global_Memory.allocate is NULL\r\n");
     return NULL;
 }
 

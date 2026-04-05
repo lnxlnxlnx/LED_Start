@@ -2,14 +2,25 @@
 #if XVector_ON
 #include<stdlib.h>
 #include<string.h>
+#include "project_log_config.h"
+#if !defined(LOG_TAG)
+	#define LOG_TAG                    "XVector"
+#endif
+#undef LOG_LVL
+#if defined(XVector_LOG_LVL)
+	#define LOG_LVL                    XVector_LOG_LVL
+#endif
+#include <elog.h>
 
 XVector* XVector_create(size_t typeSize)
 {
 	if (ISNULL(typeSize, ""))
 		return NULL;
-	printf("enter XVector_create\r\n");
+	//printf("enter XVector_create\r\n");
+	elog_d("XVector_create", "enter XVector_create");
 	XVector* this_vector = XMemory_malloc(sizeof(XVector));
-	printf("exit malloc XVector\r\n");
+	//printf("exit malloc XVector\r\n");
+	elog_d("XVector_create", "exit malloc XVector");
 	XVector_init(this_vector,typeSize);
 	return this_vector;
 }
