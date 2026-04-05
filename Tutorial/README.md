@@ -19,4 +19,4 @@
 
 ## 细化课件入口
 
-- 前三节课详细版见：`Tutorial/details/`
+- 12 节课详细版见：`Tutorial/details/`
