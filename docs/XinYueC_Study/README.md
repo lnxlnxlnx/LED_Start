@@ -1,50 +1,30 @@
-# XinYueC 学习索引
+# XinYueC Study Index
 
-这套资料是按你当前仓库里的移植结果写的，不是脱离工程的通用教程。
+这套文档面向你当前仓库中的 XinYueC 移植版本，重点是“会用 + 看懂源码设计”。
 
-## 先看哪里
-
-建议按这个顺序阅读：
+## Recommended Order
 
 1. `01_快速上手.md`
 2. `02_常用容器与使用套路.md`
 3. `03_源码设计与分层.md`
 4. `04_C语言写法与语法拆解.md`
 5. `05_当前工程中的接入与注意事项.md`
+6. `06_C模块抽象与接口设计.md`
+7. `07_C底层写法与内存模型.md`
+8. `08_C实现面向对象实战.md`
+9. `09_补充细节_宏枚举与虚表继承多态.md`
 
-## 这个库在当前工程里的位置
+## In This Repository
 
-- 源码目录：`XinYueC/`
-- 头文件目录：`XinYueC/include/`
-- 当前测试入口：`IO/XinYue/test_vector.h`、`IO/XinYue/test_quickSort.h`
-- 当前调用位置：`USER/main.c`
+- Source: `XinYueC/`
+- Public headers: `XinYueC/include/`
+- Existing tests: `IO/XinYue/test_vector.h`, `IO/XinYue/test_quickSort.h`
+- Current entry: `USER/main.c`
 
-## 先建立一个整体认识
+## How To Use This Set
 
-XinYueC 不是单纯的“算法函数合集”，它更像一套用 C 写出来的“泛型容器 + 伪面向对象”框架。
+- 如果你现在主要目标是“先写得出来”，优先看 `01 + 02 + 05`。
+- 如果你主要目标是“看懂框架怎么搭”，优先看 `03 + 06 + 08`。
+- 如果你主要目标是“补底层基础”，优先看 `04 + 07`。
 
-它的核心思路是：
-
-- 用 `void* + typeSize` 处理任意类型数据
-- 用函数指针回调处理比较、拷贝、移动、析构
-- 用虚函数表 `XVtable` 模拟 C++ 的多态
-- 用“结构体首成员继承”模拟类继承
-- 用宏包装出“更像模板”的调用方式
-
-所以学习它时，最好分两层看：
-
-- 第一层：先把 `XVector / XStack / XQueue / XPriorityQueue` 用起来
-- 第二层：再理解 `XClass / XVtable / XContainerObject` 是怎么把这些容器统一起来的
-
-## 一个很重要的提醒
-
-这个库的头文件注释很多，但“注释描述”和“当前源码真实行为”并不总是完全一致。学习时要以实际实现为准，尤其要多看：
-
-- `XVector.c`
-- `XVector_virtual.c`
-- `XQueue.c`
-- `XPriorityQueue.c`
-- `XContainerObject.h`
-- `XClass.h`
-
-最后一份文档里我专门整理了当前版本的几个使用注意点和容易踩坑的地方。
+建议每读完一份就配一个最小测试函数到 `IO/XinYue/`，再从 `USER/main.c` 临时调用验证。
