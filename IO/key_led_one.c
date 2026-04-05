@@ -19,7 +19,7 @@ static void key_led_one_init(void)
     EXTIX_Init();
 }
 
-// LED循环控制（修复for循环C99语法）
+// LED循环控制（修复for循环C99语法�?
 static void _led_loop_control(uint8_t direct)
 {
     int i; // 移到循环外定义，兼容C89
@@ -29,9 +29,9 @@ static void _led_loop_control(uint8_t direct)
         //{
             for (i = 0; i < 8; i++)
             {
-                led_funcs[i](0);
+                LED(i, 0);
                 delay_ms(LED_DELAY_TIME);
-                led_funcs[i](1);
+                LED(i, 1);
             }
         //}
     }
@@ -41,9 +41,9 @@ static void _led_loop_control(uint8_t direct)
         //{
             for (i = 0; i < 8; i++)
             {
-                led_funcs[7 - i](0);
+                LED(7 - i, 0);
                 delay_ms(LED_DELAY_TIME);
-                led_funcs[7 - i](1);
+                LED(7 - i, 1);
             }
         //}
     }
@@ -63,7 +63,7 @@ static void led_blink(void)
     }
 }
 
-// 状态机分发（原代码逻辑不变）
+// 状态机分发（原代码逻辑不变�?
 static void key_led_fsm_disptch()
 {
     state_machine.event = curent_event;
@@ -75,7 +75,7 @@ static void key_led_fsm_disptch()
         break;
     case K1:
         LED_DELAY_TIME += 100;
-        // 加个边界限制，防止延时过大/负数
+        // 加个边界限制，防止延时过�?负数
         if(LED_DELAY_TIME > 1000) LED_DELAY_TIME = 1000;
         break;
     case K2:
@@ -109,7 +109,7 @@ static void change_state(void)
     }
 }
 
-// 主循环函数（外部调用）
+// 主循环函数（外部调用�?
 void key_led_one_loop(void)
 {
     key_led_one_init();
@@ -128,15 +128,15 @@ void key_led_one_loop(void)
         case CIRCLE:
             for(int i = 0; i < 8; i += 2)
             {
-                led_funcs[i](0);
+                LED(i, 0);
                 delay_ms(LED_DELAY_TIME);
-                led_funcs[i](1);
+                LED(i, 1);
             }
             for(int i = 1; i < 8; i += 2)
             {
-                led_funcs[8 - i](0);
+                LED(8 - i, 0);
                 delay_ms(LED_DELAY_TIME);
-                led_funcs[8 - i](1);
+                LED(8 - i, 1);
             }
             break;
         case STOP:

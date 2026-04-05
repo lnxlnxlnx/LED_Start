@@ -54,7 +54,7 @@ void led5_operate(uint8_t val) { LED5 = val; }
 void led6_operate(uint8_t val) { LED6 = val; }
 void led7_operate(uint8_t val) { LED7 = val; }
 
-LED_Operate led_funcs[] = {
+LED_Operate led_funcs[] = {//DEPRECATED:其实可以用宏拼接?
     led0_operate, led1_operate, led2_operate, led3_operate,
     led4_operate, led5_operate, led6_operate, led7_operate
 };
