@@ -23,3 +23,14 @@ Recent commits use short, task-focused messages in Chinese that describe the imm
 
 ## Configuration & Artifacts
 Key preprocessor symbols are defined in the Keil target: `STM32F10X_HD` and `USE_STDPERIPH_DRIVER`. Update include paths or target settings in `USER/F103RC.uvprojx` and `.eide/eide.yml` together to keep both IDE flows aligned.
+
+## Tutorial Documentation Requirements
+This repository now includes a beginner-oriented learning track under `Tutorial/` for combining XinYueC with design patterns in embedded C.
+
+- Keep the tutorial index in `Tutorial/README.md` and update reading order whenever new tutorial files are added.
+- Keep course-level planning in `Tutorial/01_*.md` to `Tutorial/06_*.md` (overview, 12-week outline, pattern mapping, milestones, 23-pattern handbook, and implementation template).
+- Keep lesson details in `Tutorial/details/` as split files (for example: `L01_*.md`, `L02_*.md`, `L03_*.md`).
+- Each detailed lesson file must include: learning goals, beginner-friendly concept explanation, repository-specific hands-on steps, common pitfalls, exercises/thought questions, and acceptance criteria.
+- For design pattern guidance, always provide three concrete elements: when to use it, where it maps in this project, and the first minimal implementation step.
+- Prefer practical, code-near explanations over abstract theory. Examples should reference real repository paths such as `HARDWARE/`, `IO/`, `USER/`, and `XinYueC/`.
+- When updating `Tutorial/02_12周课程大纲.md`, sync related files in `Tutorial/details/` so outline and detailed lessons stay consistent.
