@@ -50,7 +50,7 @@ void XClass_deinit_base(XClass* object)
 {
 	if (ISNULL(object, "") || ISNULL(XClassGetVtable(object), ""))
 		return;
-	XClassGetVirtualFunc(object, EXClass_Deinit, void(*)(XClass*))(object);
+	XClassGetVirtualFunc(object, EXClass_Deinit, void(*)(XClass*))(object);//底层是一个void**数组，所以需要强转成对应的函数指针类型(所以这里要传入Type)
 }
 void XClass_copy_base(XClass* object, const XClass* src)
 {

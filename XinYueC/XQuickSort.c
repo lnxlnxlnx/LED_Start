@@ -150,4 +150,12 @@ void XQuickSort(void* LParray, const size_t nSize, const size_t TypeSize,XCompar
 	char* end = begin + TypeSize * (nSize - 1);//尾指针
 	//递归
 	QuicPitSort_Recur(LParray, begin, end, TypeSize, compare, order);//挖坑法
+	//NOTE: 注意
+	//ABANDON: 丢弃的代码
+	//HACK: 临时方案
+	//[x]: 
+	//TODO:未来要做的事情
+	//BUG:问题
+	//FIXME:要修复的地方
+	//XXX:需要关注的地方
 }

@@ -18,6 +18,7 @@ int32_t Student_compare(const void* a, const void* b)
     if (lhs->score < rhs->score) return XCompare_Less;
     if (lhs->score > rhs->score) return XCompare_Greater;
     return lhs->id - rhs->id; // 如果分数相同，按ID升序排序
+    //NOTE:这里两个qsort结果是不同的，stdlib中的是升序，XCompare是降序
 }
 
 void test_xcompare(void)
@@ -34,7 +35,17 @@ void test_xcompare(void)
     size_t n = sizeof(students) / sizeof(students[0]);
 
     // 使用XCompare进行排序
-    qsort(students, n, sizeof(Student), Student_compare);
+    XQuickSort(
+        students,                // 数组
+        n,                       // 个数
+        sizeof(Student),         // 元素大小
+        Student_compare, // 比较函数
+        XSORT_ASC                // 升序
+    );
+
+    //使用stdlib的qsort函数，传入自定义的比较函数
+    //qsort(students, n, sizeof(Student), Student_compare);
+
 
     // 输出排序结果
     log_i("Sorted Students:");

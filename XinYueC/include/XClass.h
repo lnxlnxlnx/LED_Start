@@ -81,7 +81,7 @@ void xassert_failed(const char* expr, const char* str, const char* filePath, con
 #define XVTABLE_STACK_INIT_DEFAULT(Size)			XVTABLE_STACK_INIT(XVTABLE_DEFAULT,Size)
 //继承表
 #define XVTABLE_INHERIT_DEFAULT(VtableBase)			XVTABLE_INHERIT(XVTABLE_DEFAULT,VtableBase)
-//虚函数表函数重载
+//NOTE:虚函数表函数重载(将枚举类型对应的函数进行重载，但是枚举本身不变，就是换了个函数指针)
 #define XVTABLE_OVERLOAD_DEFAULT(Type,Func)			XVTABLE_OVERLOAD(XVTABLE_DEFAULT,Type,Func)
 //虚函数表追加函数列表
 #define XVTABLE_ADD_FUNC_LIST_DEFAULT(table)	XVTABLE_ADD_FUNC_LIST(XVTABLE_DEFAULT,table)

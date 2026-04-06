@@ -35,6 +35,7 @@ void test_arr_quicksort(void)
     {
         printf("%d ", arr[i]);
     }
+    printf("\n");
 }
 
 // ==============================

@@ -50,7 +50,7 @@ int main(void)
 
     //_test_elog();
     //test_xvector();
-    //test_arr_quicksort();
+    test_arr_quicksort();
     test_xcompare();
 
     while (1)
