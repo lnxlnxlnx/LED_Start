@@ -62,6 +62,7 @@ virtualFolder:
     - name: IO
       files:
         - path: IO/key_led_one.c
+        - path: IO/design/device_factory.c
       folders: []
     - name: easylogger
       files:
