@@ -2,11 +2,12 @@
 #include "delay.h"
 #include "usart.h"
 #include "key_led_one.h"
-#include "design/device_factory.h"
+#include "device_init_factory.h"
 #include "project_log_config.h"
 #include "dac.h"
 #include "test_vector.h"
 #include "test_quickSort.h"
+#include "test_compare_func.h"
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "MAIN"
 #endif
@@ -37,7 +38,7 @@ int main(void)
     elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
     elog_start();
 
-    device_set_hook(_device_init_hook);
+    //device_set_hook(_device_init_hook); // 设置设备初始化钩子函数，打印设备初始化日志用的
     ret = device_create(device_all_mask());
     if (ret != DEVICE_OK)
     {
@@ -47,9 +48,10 @@ int main(void)
 
     Dac_Init();
 
-    _test_elog();
-    test_xvector();
-    test_arr_quicksort();
+    //_test_elog();
+    //test_xvector();
+    //test_arr_quicksort();
+    test_xcompare();
 
     while (1)
     {

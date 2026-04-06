@@ -60,7 +60,7 @@ XVtable* XVector_class_init()
 #endif // SHOWCONTAINERSIZE
 	return XVTABLE_DEFAULT;
 }
-//初始化函数
+//初始化函数 NOTE: ->无效注释
 void XVector_init(XVector* this_vector, size_t typeSize)
 {
 	if (ISNULL(this_vector, "") || ISNULL(typeSize, ""))

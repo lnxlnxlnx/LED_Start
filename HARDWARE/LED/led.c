@@ -41,9 +41,9 @@ void LED_Init(void)
     // PC0~PC7 全部输出高电平（和你原来的 ODR 效果一致）
     GPIO_SetBits(GPIOC, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 |
                    GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
-                   log_e("LED_Init", "LED_Init OK");
-                   log_w("LED_Init", "LED_Init OK");
-                   log_i("LED_Init", "LED_Init OK");
+                //    log_e("LED_Init", "LED_Init OK");
+                //    log_w("LED_Init", "LED_Init OK");
+                //    log_i("LED_Init", "LED_Init OK");
 }
 void led0_operate(uint8_t val) { LED0 = val; }  //DEPRECATED:其实可以用宏拼接?
 void led1_operate(uint8_t val) { LED1 = val; }
