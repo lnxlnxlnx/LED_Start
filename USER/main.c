@@ -30,20 +30,22 @@ int main(void)
 {
     int ret;
 
-    //delay_init();
     NVIC_Configuration();
     uart_init(115200);
 
+    elog_init();
+    elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
+    elog_start();
+
+    device_set_hook(_device_init_hook);
     ret = device_create(device_all_mask());
     if (ret != DEVICE_OK)
     {
+        log_e("device_create failed: ret=%d", ret);
         while (1);
     }
 
     Dac_Init();
-    elog_init();
-    elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
-    elog_start();
 
     _test_elog();
     test_xvector();
@@ -54,4 +56,3 @@ int main(void)
         key_led_one_loop();
     }
 }
-

@@ -1,7 +1,27 @@
 #include "device_factory.h"
+#include "delay.h"
 #include "led.h"
 #include "exti.h"
 #include "rtc.h"
+#include "project_log_config.h"
+#if !defined(LOG_TAG)
+    #define LOG_TAG                    "device_factory"
+#endif
+#undef LOG_LVL
+#if defined(DEVICE_FACTORY_LOG_LVL)
+    #define LOG_LVL                    DEVICE_FACTORY_LOG_LVL
+#endif
+#include <elog.h>
+
+typedef struct
+{
+    /* bit 必须是 2^n 的单比特值 */
+    DeviceType bit;
+    /* 用于日志/调试输出 */
+    const char *name;
+    /* 具体设备的初始化函数 */
+    device_init_fn_t init;
+} DeviceDesc;
 
 static int _device_led_init(void)
 {
@@ -17,7 +37,13 @@ static int _device_key_exti_init(void)
 
 static int _device_rtc_init(void)
 {
-    return RTC_Init() ? DEVICE_ERR_INIT_FAILED : DEVICE_OK;
+    u8 rtc_ret = RTC_Init();
+    /* Project convention: RTC_Init() returns 0 on success. */
+    if (rtc_ret == 0u)
+    {
+        return DEVICE_OK;
+    }
+    return DEVICE_ERR_INIT_FAILED;
 }
 
 static int _device_delay_init(void)
@@ -26,15 +52,26 @@ static int _device_delay_init(void)
     return DEVICE_OK;
 }
 
-static const device_init_fn_t g_device_init_by_bit[] =
+/// @brief 设备工厂的静态配置表，描述了工厂支持的全部设备及其初始化函数。
+/// NOTE: 初始化就是三步走:init函数、宏定义分配bit、然后填下面这个表
+static const DeviceDesc g_device_descs[] =
 {
-    _device_led_init,
-    _device_key_exti_init,
-    _device_rtc_init,
-    _device_delay_init
+    /* 注意: 初始化顺序由 bit 位决定，不由这里的数组顺序决定。 */
+    { DEV_LED,      "LED",      _device_led_init },
+    { DEV_KEY_EXTI, "KEY_EXTI", _device_key_exti_init },
+    { DEV_RTC,      "RTC",      _device_rtc_init },
+    { DEV_DELAY,    "DELAY",    _device_delay_init }
 };
 
-#define DEVICE_BIT_COUNT ((u32)(sizeof(g_device_init_by_bit) / sizeof(g_device_init_by_bit[0])))
+#define DEVICE_DESC_COUNT ((u32)(sizeof(g_device_descs) / sizeof(g_device_descs[0])))
+
+static const DeviceDesc *g_desc_by_bitpos[32];
+/* 工厂支持的全部设备 bit 集合，由 g_device_descs 动态构建。 */
+static u32 g_known_mask = DEV_NONE;
+/* 已经成功初始化过的设备 bit 集合，避免重复初始化。 */
+static u32 g_initialized_mask = DEV_NONE;
+static u8 g_factory_ready = 0;
+static device_hook_fn_t g_device_hook = 0;//这里0是NULL，表示默认没有注册钩子函数，调用时会先判断是否为NULL再调用，避免空指针异常
 
 static const u8 g_debruijn_idx_32[32] =
 {
@@ -46,32 +83,83 @@ static const u8 g_debruijn_idx_32[32] =
 
 static u8 _lowest_bit_index(u32 value)
 {
+    /* De Bruijn 算法: O(1) 计算单比特值在 0~31 的索引 */
     u32 lowest = value & (0u - value);
     return g_debruijn_idx_32[(lowest * 0x077CB531u) >> 27];
 }
 
-DeviceType device_all_mask(void)
+static int _factory_prepare(void)
 {
-    if (DEVICE_BIT_COUNT >= 32u)
+    u32 i;
+
+    if (g_factory_ready)
     {
-        return (DeviceType)0xFFFFFFFFu;
+        return DEVICE_OK;
     }
 
-    return (DeviceType)((1u << DEVICE_BIT_COUNT) - 1u);
+    g_known_mask = DEV_NONE;
+    for (i = 0; i < 32u; i++)
+    {
+        g_desc_by_bitpos[i] = 0;
+    }
+
+    for (i = 0; i < DEVICE_DESC_COUNT; i++)
+    {
+        DeviceType bit = g_device_descs[i].bit;
+        u8 bit_idx;
+
+        /* 每个设备必须且只能占用 1 个 bit。 */
+        if ((bit == DEV_NONE) || ((bit & (bit - 1u)) != 0u))
+        {
+            return DEVICE_ERR_BAD_CONFIG;
+        }
+
+        bit_idx = _lowest_bit_index(bit);
+        /* 禁止多个设备复用同一个 bit。 */
+        if (g_desc_by_bitpos[bit_idx] != 0)
+        {
+            return DEVICE_ERR_BAD_CONFIG;
+        }
+
+        g_desc_by_bitpos[bit_idx] = &g_device_descs[i];
+        g_known_mask |= bit;
+    }
+
+    g_factory_ready = 1;
+    return DEVICE_OK;
+}
+
+void device_set_hook(device_hook_fn_t hook)
+{
+    g_device_hook = hook;
+}
+
+DeviceType device_all_mask(void)
+{
+    if (_factory_prepare() != DEVICE_OK)
+    {
+        return DEV_NONE;
+    }
+    return g_known_mask;
 }
 
 int device_create(DeviceType devices)
 {
     u32 pending;
-    u32 known_mask = device_all_mask();
-    static u32 initialized_mask = DEV_NONE;
+    int ret;
+
+    ret = _factory_prepare();
+    if (ret != DEVICE_OK)
+    {
+        return ret;
+    }
 
     if (devices == DEV_NONE)
     {
         return DEVICE_ERR_EMPTY_MASK;
     }
 
-    if ((devices & (~known_mask)) != 0u)
+    if ((devices & (~g_known_mask)) != 0u)
     {
         return DEVICE_ERR_UNSUPPORTED;
     }
@@ -79,37 +167,72 @@ int device_create(DeviceType devices)
     pending = devices;
     while (pending != 0u)
     {
+        /*
+         * 逐次取出最低位的 1:
+         * bit = pending & -pending
+         * 这样可在一次调用中初始化多个设备，且复杂度与“置 1 的位数”成正比。
+         */
         u32 bit = pending & (0u - pending);
-        u8 idx = _lowest_bit_index(bit);
-        device_init_fn_t init_fn;
-        int ret;
+        u8 bit_idx = _lowest_bit_index(bit);
+        const DeviceDesc *desc = g_desc_by_bitpos[bit_idx];
 
-        if ((initialized_mask & bit) != 0u)
+        if ((g_initialized_mask & bit) != 0u)
         {
             pending &= (pending - 1u);
             continue;
         }
 
-        if ((u32)idx >= DEVICE_BIT_COUNT)
+        if ((desc == 0) || (desc->init == 0))
         {
             return DEVICE_ERR_UNSUPPORTED;
         }
 
-        init_fn = g_device_init_by_bit[idx];
-        if (init_fn == 0)
+        if (g_device_hook != 0)
         {
-            return DEVICE_ERR_UNSUPPORTED;
+            /* 初始化前钩子 */
+            g_device_hook(bit_idx, desc->name, bit, DEV_HOOK_BEFORE, DEVICE_OK);
         }
 
-        ret = init_fn();
+        ret = desc->init();
+
+        if (g_device_hook != 0)
+        {
+            /* 初始化后钩子 */
+            g_device_hook(bit_idx, desc->name, bit, DEV_HOOK_AFTER, ret);
+        }
+
         if (ret != DEVICE_OK)
         {
             return ret;
         }
 
-        initialized_mask |= bit;
+        g_initialized_mask |= bit;
+        /* 清除刚处理完的最低位 1，继续处理下一个设备。 */
         pending &= (pending - 1u);
     }
 
     return DEVICE_OK;
+}
+
+
+void _device_init_hook(u8 idx, const char *name, DeviceType bit, DeviceHookStage stage, int ret)
+{
+    if (stage == DEV_HOOK_BEFORE)
+    {
+        log_i("dev_init start: idx=%u name=%s bit=0x%08lX",
+              (unsigned int)idx,
+              name,
+              (unsigned long)bit);
+    }
+    else
+    {
+        if (ret == DEVICE_OK)
+        {
+            log_i("dev_init ok: idx=%u name=%s", (unsigned int)idx, name);
+        }
+        else
+        {
+            log_e("dev_init fail: idx=%u name=%s ret=%d", (unsigned int)idx, name, ret);
+        }
+    }
 }
