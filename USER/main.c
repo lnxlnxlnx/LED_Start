@@ -30,11 +30,11 @@ int main(void)
 {
     int ret;
 
-    delay_init();
+    //delay_init();
     NVIC_Configuration();
     uart_init(115200);
 
-    ret = device_create(DEV_GROUP_BOOT);
+    ret = device_create(device_all_mask());
     if (ret != DEVICE_OK)
     {
         while (1);
@@ -54,3 +54,4 @@ int main(void)
         key_led_one_loop();
     }
 }
+

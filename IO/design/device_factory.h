@@ -16,12 +16,13 @@ typedef u32 DeviceType;
 #define DEV_LED                     ((DeviceType)(1u << 0))
 #define DEV_KEY_EXTI                ((DeviceType)(1u << 1))
 #define DEV_RTC                     ((DeviceType)(1u << 2))
+#define DEV_DELAY                   ((DeviceType)(1u << 3))
 
 #define DEV_GROUP_IO                (DEV_LED | DEV_KEY_EXTI)
-#define DEV_GROUP_TIME              (DEV_RTC)
+#define DEV_GROUP_TIME              (DEV_RTC | DEV_DELAY)
 #define DEV_GROUP_BOOT              (DEV_GROUP_IO | DEV_GROUP_TIME)
-#define DEV_GROUP_ALL               (DEV_GROUP_BOOT)
 
+DeviceType device_all_mask(void);
 int device_create(DeviceType devices);
 
 #endif /* D085E887_BC54_433A_A988_3D85ED04BC29 */
