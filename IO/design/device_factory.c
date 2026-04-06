@@ -70,7 +70,7 @@ static const DeviceDesc *g_desc_by_bitpos[32];
 static u32 g_known_mask = DEV_NONE;
 /* 已经成功初始化过的设备 bit 集合，避免重复初始化。 */
 static u32 g_initialized_mask = DEV_NONE;
-static u8 g_factory_ready = 0;
+static u8 g_factory_ready = 0;      //NOTE: 这里用一个标志位来避免重复准备工厂，准备工厂的过程会遍历整个设备描述表，复杂度为 O(N)，因此只需执行一次即可。
 static device_hook_fn_t g_device_hook = 0;//这里0是NULL，表示默认没有注册钩子函数，调用时会先判断是否为NULL再调用，避免空指针异常
 
 static const u8 g_debruijn_idx_32[32] =
@@ -88,7 +88,7 @@ static u8 _lowest_bit_index(u32 value)
     return g_debruijn_idx_32[(lowest * 0x077CB531u) >> 27];
 }
 
-static int _factory_prepare(void)
+static int _factory_prepare(void) //TODO:未来可以优化，用container_of宏反推出结构体就行，不需要额外的开销
 {
     u32 i;
 
