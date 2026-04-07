@@ -53,7 +53,7 @@ void delay_systick_handler(void)
     }
 }
 
-u32 delay_get_ms(void)
+uint64_t delay_get_ms(void)
 {
     return g_tick_ms;
 }

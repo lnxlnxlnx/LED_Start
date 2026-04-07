@@ -3,6 +3,7 @@
 #include "usart.h"
 #include "elog.h"
 #include "device_init_factory.h"
+#include "MultiTimer.h"
 void debug_init(void){
     int ret;
     uart_init(115200);

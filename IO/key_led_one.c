@@ -95,12 +95,14 @@ static void change_state(void)
     }
 }
 
-void key_led_one_loop(void)
+void key_led_one_loop(u8 ctrl_loop)
 {
     int i;
     key_led_one_init();
+    #if ctrl_loop > 0
     while (1)
     {
+    #endif
         key_led_fsm_disptch();
         switch (state_machine.state)
         {
@@ -131,5 +133,7 @@ void key_led_one_loop(void)
             break;
         }
         delay_ms(100);
+    #if ctrl_loop > 0
     }
+    #endif
 }

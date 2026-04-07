@@ -33,6 +33,7 @@ typedef void (*device_hook_fn_t)(u8 idx, const char *name, DeviceType bit, Devic
 #define DEV_KEY_EXTI                ((DeviceType)(1u << 2))
 #define DEV_RTC                     ((DeviceType)(1u << 3))
 #define DEV_BEEP                    ((DeviceType)(1u << 4))
+#define DEV_MULTI_TIMER             ((DeviceType)(1u << 5))
 
 #define DEV_GROUP_IO                (DEV_LED | DEV_KEY_EXTI)
 #define DEV_GROUP_TIME              (DEV_RTC | DEV_DELAY)

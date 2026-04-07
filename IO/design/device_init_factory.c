@@ -5,6 +5,7 @@
 #include "key.h"
 #include "beep.h"
 #include "rtc.h"
+#include "MultiTimer.h"
 #include "project_log_config.h"
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "device_factory"
@@ -61,6 +62,12 @@ static int _device_beep_init(void)
     return DEVICE_OK;
 }
 
+static int _device_multi_timer_init(void)
+{
+    MultiTimerInstall((PlatformTicksFunction_t)delay_get_ms);
+    return DEVICE_OK;
+}
+
 /// @brief 设备工厂的静态配置表，描述了工厂支持的全部设备及其初始化函数。
 /// NOTE: 初始化就是三步走:init函数、宏定义分配bit、然后填下面这个表
 static const DeviceDesc g_device_descs[] =
@@ -70,7 +77,8 @@ static const DeviceDesc g_device_descs[] =
     { DEV_KEY_EXTI, "KEY_EXTI", _device_key_exti_init },
     { DEV_RTC,      "RTC",      _device_rtc_init },
     { DEV_DELAY,    "DELAY",    _device_delay_init },
-    { DEV_BEEP,     "BEEP",     _device_beep_init }
+    { DEV_BEEP,     "BEEP",     _device_beep_init },
+    { DEV_MULTI_TIMER, "MULTI_TIMER", _device_multi_timer_init }
 };
 
 #define DEVICE_DESC_COUNT ((u32)(sizeof(g_device_descs) / sizeof(g_device_descs[0])))

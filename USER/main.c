@@ -7,6 +7,7 @@
 #include "test_compare_func.h"
 #include "tools.h"
 #include "beep.h"
+#include "test_multi_timer.h"
 #if !defined(LOG_TAG)
     #define LOG_TAG                    "MAIN"
 #endif
@@ -25,13 +26,14 @@ int main(void)
     //test_xvector();
     test_arr_quicksort();
     test_xcompare();
-    
+    test_multi_timer();
     // BEEP = 0;
     // delay_ms(10);
     // BEEP = 1;
 
     while (1)
     {
-        key_led_one_loop();
+        key_led_one_loop(0);
+        MultiTimerYield();
     }
 }

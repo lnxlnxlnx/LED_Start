@@ -44,7 +44,7 @@ typedef struct
 extern STATE_MACHINE state_machine;
 
 // 函数声明（仅声明，实现移到key_led_one.c）
-void key_led_one_loop(void);
+void key_led_one_loop(u8 ctrl_loop);
 
 #endif /* C0739F6A_3FF0_481F_9DE9_B26FBAB8C1CB */
 
