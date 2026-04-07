@@ -1,18 +1,29 @@
 #include "key_led_one.h"
 #include "exti.h"
 #include "beep.h"
+#include "multi_button.h"
 
 // 全局变量定义
 uint16_t LED_DELAY_TIME = 200;
 STATE_MACHINE state_machine = { FALLING, KNONE };
 EVENT_TYPE curent_event = KNONE;
 LED_BEEP_MACHINE led_beep_machine = { NORMAL, KNONE };
+static Button btn1;
 
-// static void exti_init(void){
-//     KEY_Init();
-//     Ex_NVIC_Config()
+uint8_t read_button_gpio(uint8_t button_id)
+{
+    switch (button_id) {
+        case 1:
+            return WK_UP; // 假设KEY0对应按钮1
+        default:
+            return 0;
+    }
+}
 
-// }
+void btn1_single_click_handler(Button* btn, void* user_data)
+{
+    printf("Button 1: Single Click\n");
+}
 
 // 静态初始化函数
 static void key_led_one_init(void)
@@ -88,7 +99,7 @@ static void led_beep_fsm_dispatch() {
         default:
             break;
     }
-    printf("OK\n");
+    //printf("OK\n");
     delay_ms(10);
     //curent_event = KNONE;
 }
@@ -96,6 +107,10 @@ static void led_beep_fsm_dispatch() {
 void led_beep_loop(void) { 
     key_led_one_init();
     BEEP_Init();
+    button_init(&btn1,  read_button_gpio, 0, 1); 
+    button_attach(&btn1, BTN_SINGLE_CLICK, btn1_single_click_handler, NULL);
+    button_start(&btn1);
+    printf("LED Beep FSM Started\n");
     while(1){
         led_beep_fsm_dispatch();
     }

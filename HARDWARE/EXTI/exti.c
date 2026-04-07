@@ -28,9 +28,9 @@ void EXTIX_Init(void)
     Ex_NVIC_Config(GPIO_C,8,FTIR); 		//下降沿触发
 	Ex_NVIC_Config(GPIO_C,9,FTIR);		//下降沿触发
 	Ex_NVIC_Config(GPIO_D,2,FTIR);		//下降沿触发
-	Ex_NVIC_Config(GPIO_A,0,RTIR);		//上升沿触发
+	//Ex_NVIC_Config(GPIO_A,0,RTIR);		//上升沿触发
 
-	MY_NVIC_Init(2,2,EXTI0_IRQn,2);    	//抢占2，子优先级2，组2
+	//MY_NVIC_Init(2,2,EXTI0_IRQn,2);    	//抢占2，子优先级2，组2
 	MY_NVIC_Init(2,1,EXTI9_5_IRQn,2);  	//抢占2，子优先级1，组2
 	MY_NVIC_Init(2,0,EXTI2_IRQn,2);  	//抢占2，子优先级0，组2	  
  
