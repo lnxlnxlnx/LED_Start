@@ -20,8 +20,6 @@ int main(void)
     NVIC_Configuration();
     debug_init();
 
-    Dac_Init();
-
     _test_elog();
     //test_xvector();
     test_arr_quicksort();

@@ -12,7 +12,7 @@ void debug_init(void){
     elog_start();
 
     device_set_hook(_device_init_hook); // 设置设备初始化钩子函数，打印设备初始化日志用的
-    ret = device_create(device_all_mask());
+    ret = device_create(device_all_mask() & (~DEV_KEY_EXTI)); // 创建设备，DAC设备不创建，测试一下设备初始化失败的日志
     if (ret != DEVICE_OK)
     {
         log_e("device_create failed: ret=%d", ret);
