@@ -15,6 +15,9 @@
 void delay_init(void);
 void delay_ms(u16 nms);
 void delay_us(u32 nus);
+void delay_systick_handler(void);
+u32 delay_get_ms(void);
+u32 delay_get_s(void);
 
 #endif
 
