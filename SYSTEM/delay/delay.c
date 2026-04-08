@@ -7,7 +7,7 @@
  * - delay_us()/delay_ms() 不再修改 SysTick 配置，避免破坏节拍统计
  */
 
-static volatile u32 g_tick_ms = 0u;
+static volatile uint64_t g_tick_ms = 0u;
 static volatile u32 g_tick_s = 0u;
 static u32 g_systick_reload = 0u;
 static u32 g_cycles_per_us = 0u;
@@ -65,7 +65,8 @@ u32 delay_get_s(void)
 
 void delay_ms(u16 nms)
 {
-    u32 start;
+    uint64_t start;
+    uint64_t wait_ms;
 
     if (g_delay_inited == 0u)
     {
@@ -73,7 +74,8 @@ void delay_ms(u16 nms)
     }
 
     start = delay_get_ms();
-    while ((delay_get_ms() - start) < (u32)nms)
+    wait_ms = (uint64_t)nms;
+    while ((delay_get_ms() - start) < wait_ms)
     {
     }
 }
