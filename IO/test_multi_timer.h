@@ -11,7 +11,7 @@ MultiTimer timer3;
 static volatile u16 cnt1 = 0;
 void exampleTimer1Callback(MultiTimer* timer, void *userData)
 {
-    cnt1++;
+    ++cnt1;
     printf("exampleTimer1Callback-> %s.\r\n, current time: %lu  cnt: %u\r\n", (char*)userData, delay_get_ms(), cnt1);
     MultiTimerStart(timer, 1000, exampleTimer1Callback, userData);
 }
