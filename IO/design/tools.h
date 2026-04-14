@@ -7,6 +7,7 @@
 void debug_init(void){
     int ret;
     uart_init(115200);
+    uart2_init(115200);
 
     elog_init();
     elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);

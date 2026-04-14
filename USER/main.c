@@ -20,8 +20,38 @@
 #include "test_multi_timer.h"
 #include "delay.h"
 
+#define u64 uint64_t
+static void esp32_uart_service(void)
+{
+    u16 sta;
+    u16 len;
+
+    sta = USART2_RX_STA;
+    if ((sta & 0x8000) == 0)
+    {
+        return;
+    }
+
+    len = sta & 0x3FFF;
+    USART2_RX_STA = 0;
+
+    uart2_send_buf((const u8 *)"STM32_ACK:", 10);
+    if (len > 0)
+    {
+        uart2_send_buf(USART2_RX_BUF, len);
+    }
+    uart2_send_buf((const u8 *)"\r\n", 2);
+
+    printf("[USART2 RX] len=%u\r\n", len);
+}
+
 int main(void)
 {
+    u64 now_ms;
+    u64 last_led_ms = 0;
+    u64 last_log_ms = 0;
+    u8 led_on = 0;
+
     NVIC_Configuration();
     debug_init();
     _test_elog();
@@ -32,13 +62,20 @@ int main(void)
 
     while (1)
     {
-        //key_led_one_loop(0);
-        //MultiTimerYield();
-        //BEEP = 0;
-        LED0 = 0;
-        delay_ms(500);
-        LED0 = 1;
-        delay_ms(500);
-        log_d( "current time: %llu\r\n", delay_get_ms());
+        esp32_uart_service();
+
+        now_ms = delay_get_ms();
+        if ((now_ms - last_led_ms) >= 500)
+        {
+            last_led_ms = now_ms;
+            led_on = !led_on;
+            LED0 = led_on ? 0 : 1;
+        }
+
+        if ((now_ms - last_log_ms) >= 1000)
+        {
+            last_log_ms = now_ms;
+            log_d("current time: %llu\r\n", now_ms);
+        }
     }
 }

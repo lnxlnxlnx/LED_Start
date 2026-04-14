@@ -149,3 +149,111 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 } 
 #endif	
 
+
+void uart2_init(u32 bound)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+	USART_InitTypeDef USART_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+
+    //USART2_TX   PA.2
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    //USART2_RX   PA.3
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+#if EN_USART2_RX
+    NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+#endif
+
+	USART_InitStructure.USART_BaudRate = bound;
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+	USART_InitStructure.USART_Parity = USART_Parity_No;
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+
+    USART_Init(USART2, &USART_InitStructure);
+#if EN_USART2_RX
+    USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+#endif
+    USART_Cmd(USART2, ENABLE);
+}
+
+void uart2_send_byte(u8 data)
+{
+    USART_SendData(USART2, data);
+    while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET) {}
+}
+
+void uart2_send_buf(const u8 *buf, u16 len)
+{
+    u16 i;
+    for (i = 0; i < len; i++)
+    {
+        uart2_send_byte(buf[i]);
+    }
+}
+
+#if EN_USART2_RX
+u8 USART2_RX_BUF[USART2_REC_LEN];
+u16 USART2_RX_STA = 0;
+
+void USART2_IRQHandler(void)
+{
+    u8 res;
+#ifdef OS_TICKS_PER_SEC
+	OSIntEnter();
+#endif
+    if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+    {
+        res = USART_ReceiveData(USART2);
+        if ((USART2_RX_STA & 0x8000) == 0)
+        {
+            if (USART2_RX_STA & 0x4000)
+            {
+                if (res != 0x0a)
+                {
+                    USART2_RX_STA = 0;
+                }
+                else
+                {
+                    USART2_RX_STA |= 0x8000;
+                }
+            }
+            else
+            {
+                if (res == 0x0d)
+                {
+                    USART2_RX_STA |= 0x4000;
+                }
+                else
+                {
+                    USART2_RX_BUF[USART2_RX_STA & 0x3FFF] = res;
+                    USART2_RX_STA++;
+                    if (USART2_RX_STA > (USART2_REC_LEN - 1))
+                    {
+                        USART2_RX_STA = 0;
+                    }
+                }
+            }
+        }
+    }
+#ifdef OS_TICKS_PER_SEC
+	OSIntExit();
+#endif
+}
+#endif
+
