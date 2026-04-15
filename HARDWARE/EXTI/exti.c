@@ -35,14 +35,14 @@ void EXTIX_Init(void)
 	MY_NVIC_Init(2,0,EXTI2_IRQn,2);  	//抢占2，子优先级0，组2	  
  
 } 
-extern EVENT_TYPE curent_event;
+//extern EVENT_TYPE curent_event;
 //外部中断0服务程序
 void EXTI0_IRQHandler(void)
 {
     delay_ms(10);    //消抖
 	//curent_event = kUP; // 设置当前事件为kUP
 	//if (curent_event == KNONE) {
-    	curent_event = kUP;
+    	EXTI_Event = kUP;
 	//}
 	EXTI->PR=1<<0;  //清除LINE0上的中断标志位
 }
@@ -50,7 +50,7 @@ void EXTI0_IRQHandler(void)
 void EXTI2_IRQHandler(void)
 {
     delay_ms(10);    //消抖			 
-	curent_event = K2;
+	EXTI_Event = K2;
     EXTI->PR=1<<2;     //清除LINE2上的中断标志位  
 }
 //外部中断5_9服务中断程序
@@ -59,11 +59,11 @@ void EXTI2_IRQHandler(void)
 	delay_ms(10);   //消抖			 
 	if(KEY0==0)	    //KEY0按键
 	{
-		curent_event = K0;
+		EXTI_Event = K0;
 	}
  	if(KEY1==0)	    //KEY1按键
 	{
-		curent_event = K1;
+		EXTI_Event = K1;
 	}
 	EXTI->PR=1<<8;  //清除LINE8上的中断标志位  
 	EXTI->PR=1<<9;  //清除LINE9上的中断标志位  	
