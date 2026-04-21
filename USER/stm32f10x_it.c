@@ -23,7 +23,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h" 
-
+#include "multi_button.h"
+#include <elog.h>
 
  
 void NMI_Handler(void)
@@ -77,6 +78,12 @@ void PendSV_Handler(void)
  
 void SysTick_Handler(void)
 {
+  static uint32_t cnt_5 = 0;
+  if (++cnt_5 >= 5) {
+    cnt_5 = 0;
+    button_ticks();
+    //log_i("SysTick_Handler", "button_ticks called");
+  }
 }
 
 /******************************************************************************/

@@ -12,9 +12,11 @@ static Button btn1;
 
 uint8_t read_button_gpio(uint8_t button_id)
 {
+    //printf("Reading GPIO for button ID: %d\n", button_id);
     switch (button_id) {
         case 1:
             return WK_UP; // 假设KEY0对应按钮1
+            //return GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0); // 直接读取GPIOA Pin0的状态
         default:
             return 0;
     }
@@ -107,7 +109,7 @@ static void led_beep_fsm_dispatch() {
 void led_beep_loop(void) { 
     key_led_one_init();
     BEEP_Init();
-    button_init(&btn1,  read_button_gpio, 0, 1); 
+    button_init(&btn1,  read_button_gpio, 1, 1); 
     button_attach(&btn1, BTN_SINGLE_CLICK, btn1_single_click_handler, NULL);
     button_start(&btn1);
     printf("LED Beep FSM Started\n");

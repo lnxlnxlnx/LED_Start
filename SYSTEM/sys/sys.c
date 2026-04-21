@@ -57,7 +57,8 @@ void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM)
 //NVIC_SubPriority和NVIC_PreemptionPriority的原则是,数值越小,越优先	   
 void MY_NVIC_Init(u8 NVIC_PreemptionPriority,u8 NVIC_SubPriority,u8 NVIC_Channel,u8 NVIC_Group)	 
 { 
-	u32 temp;	
+	u32 temp;
+	SysTick_Config(SystemCoreClock/1000); // 1ms中断一次	
 	NVIC_PriorityGroupConfig(NVIC_Group);//设置分组
 	temp=NVIC_PreemptionPriority<<(4-NVIC_Group);	  
 	temp|=NVIC_SubPriority&(0x0f>>NVIC_Group);
