@@ -41,15 +41,10 @@ int main(void)
 	elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
 	elog_start();
 	_test_elog(); // 测试elog输出
-	//Generate_SineWave();
 
 	while (1)
 	{
-		key_led_one_loop();
-		// Dac_Set_Vol(2000); // 设置DAC输出电压为2.0V
-		// delay_ms(100);
-		// Dac_Set_Vol(200); // 设置DAC输出电压为1.0V
-		// delay_ms(100);
-		//Output_SineWave(); // 输出正弦波
+		//key_led_one_loop();
+		led_beep_loop();
 	}
 }
