@@ -67,3 +67,44 @@ void MY_NVIC_Init(u8 NVIC_PreemptionPriority,u8 NVIC_SubPriority,u8 NVIC_Channel
 	NVIC->IP[NVIC_Channel]|=temp<<4;//设置响应优先级和抢断优先级   	    	  				   
 }
 
+// 关闭单个 NVIC 中断通道（和 MY_NVIC_Init 反操作）
+void MY_NVIC_DeInit(u8 NVIC_Channel)
+{
+    // 关闭中断使能
+    NVIC->ICER[NVIC_Channel / 32] = 1 << (NVIC_Channel % 32);
+    
+    // 清除中断挂起标志
+    NVIC->ICPR[NVIC_Channel / 32] = 1 << (NVIC_Channel % 32);
+    
+    // 清空优先级（可选，更干净）
+    NVIC->IP[NVIC_Channel] = 0;
+}
+
+// 关闭指定 EXTI 中断线（比如 EXTI9_5 里的 EXTI8、EXTI9）
+void Ex_NVIC_DeInit(u8 BITx)
+{
+    // 关闭中断屏蔽
+    EXTI->IMR &= ~(1 << BITx);
+    
+    // 清除触发方式
+    EXTI->FTSR &= ~(1 << BITx);
+    EXTI->RTSR &= ~(1 << BITx);
+    
+    // 清除中断挂起标志
+    EXTI->PR |= 1 << BITx;
+}
+
+/*
+// 关闭 KEY_UP → EXTI0
+MY_NVIC_DeInit(EXTI0_IRQn);
+Ex_NVIC_DeInit(0);
+
+// 关闭 K2 → EXTI2
+MY_NVIC_DeInit(EXTI2_IRQn);
+Ex_NVIC_DeInit(2);
+
+// 关闭 K0/K1 → EXTI9_5
+MY_NVIC_DeInit(EXTI9_5_IRQn);
+Ex_NVIC_DeInit(8);
+Ex_NVIC_DeInit(9);
+*/

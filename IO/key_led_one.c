@@ -178,6 +178,10 @@ static void led_beep_fsm_dispatch() {
                     current_mode = 2;
                     curent_event = KNONE;
                     break;
+                case kUP:
+                    led_beep_machine.mode = NORMAL; // 直接切回普通模式
+                    printf("ok!\n");
+                    curent_event = KNONE;
                 default:
                     break;
             }
