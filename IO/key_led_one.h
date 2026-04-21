@@ -21,7 +21,8 @@ typedef enum
 
 typedef enum{
     NORMAL,
-    BLINK
+    BLINK,
+    CIRCLE2
 } LED_BEEP_MODE;
 
 /***************************************

@@ -27,6 +27,42 @@ void btn1_single_click_handler(Button* btn, void* user_data)
     printf("Button 1: Single Click\n");
 }
 
+void btn1_double_click_handler(Button* btn, void* user_data)
+{
+    switch (led_beep_machine.mode)
+    {
+        case NORMAL:
+            led_beep_machine.mode = BLINK;
+            break;
+        case BLINK:
+            led_beep_machine.mode = CIRCLE2;
+            break;
+        case CIRCLE2:
+            led_beep_machine.mode = NORMAL;
+            break;
+        default:
+            break;
+    }
+}
+
+void btn1_long_press_handler(Button* btn, void* user_data)
+{
+    switch (led_beep_machine.mode)
+    {
+        case NORMAL:
+            led_beep_machine.mode = CIRCLE2;
+            break;
+        case BLINK:
+            led_beep_machine.mode = NORMAL;
+            break;
+        case CIRCLE2:
+            led_beep_machine.mode = BLINK;
+            break;
+        default:
+            break;
+    }
+}
+
 // 静态初始化函数
 static void key_led_one_init(void)
 {
@@ -73,30 +109,103 @@ static void led_blink(void)
     for (i = 0; i < 3; i++)
     {
         LED0 = 0;
-        delay_ms(200);
+        delay_ms(500);
         LED0 = 1;
-        delay_ms(200); // 补个延时，否则闪烁太快看不到
+        delay_ms(500); // 补个延时，否则闪烁太快看不到
     }
 }
 
 static void led_beep_fsm_dispatch() {
     led_beep_machine.event = curent_event;
-    switch (led_beep_machine.event)
-    {
-        case K0:
-            LED0 = !LED0; // 切换LED状态
-            curent_event = KNONE;       //TODO:也可以用标志位来判断是否已经处理过这个事件
+    switch (led_beep_machine.mode) {
+        case NORMAL:
+            switch (led_beep_machine.event)
+            {
+                case K0:
+                    LED0 = !LED0; // 切换LED状态
+                    curent_event = KNONE;       //TODO:也可以用标志位来判断是否已经处理过这个事件
+                    break;
+                case K1:
+                    LED1 = !LED1; // 切换LED状态
+                    curent_event = KNONE;
+                    break;
+                case K2:
+                    LED2 = !LED2; // 切换LED状态
+                    curent_event = KNONE;
+                    break;
+                case kUP:
+                    curent_event = KNONE;
+                    break;
+                default:
+                    break;
+            }
             break;
-        case K1:
-            LED1 = !LED1; // 切换LED状态
-            curent_event = KNONE;
+        case BLINK:
+            switch (led_beep_machine.event)
+            {
+                case K0:
+                    led_blink();
+                    curent_event = KNONE;       //TODO:也可以用标志位来判断是否已经处理过这个事件
+                    break;
+                case K1:
+                    LED0 = 1;
+                    curent_event = KNONE;
+                    break;
+                case K2:
+                    LED0 = 0;
+                    curent_event = KNONE;
+                    break;
+                case kUP:
+                    curent_event = KNONE;
+                    break;
+                default:
+                    break;
+            }
             break;
-        case K2:
-            LED2 = !LED2; // 切换LED状态
-            curent_event = KNONE;
-            break;
-        case kUP:
-            curent_event = KNONE;
+        case CIRCLE2:
+            static int current_mode = 0;
+            switch (led_beep_machine.event)
+            {
+                case K0:
+                    current_mode = 0;
+                    curent_event = KNONE;       //TODO:也可以用标志位来判断是否已经处理过这个事件
+                    break;
+                case K1:
+                    current_mode = 1;
+                    curent_event = KNONE;
+                    break;
+                case K2:
+                    current_mode = 2;
+                    curent_event = KNONE;
+                    break;
+                default:
+                    break;
+            }
+            switch (current_mode)
+            {
+                case 0:
+                    _led_loop_control(0);
+                    break;
+                case 1:
+                    _led_loop_control(1);
+                    break;
+                case 2:
+                    for (int i = 0; i < 8; i += 2)
+                    {
+                        led_funcs[i](0);
+                        delay_ms(LED_DELAY_TIME);
+                        led_funcs[i](1);
+                    }
+                    for (int i = 1; i < 8; i += 2)
+                    {
+                        led_funcs[8 - i](0);
+                        delay_ms(LED_DELAY_TIME);
+                        led_funcs[8 - i](1);
+                    }
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
             break;
@@ -106,14 +215,16 @@ static void led_beep_fsm_dispatch() {
     //curent_event = KNONE;
 }
 
-void led_beep_loop(void) { 
+void led_beep_loop(void) {
     key_led_one_init();
     BEEP_Init();
-    button_init(&btn1,  read_button_gpio, 1, 1); 
-    button_attach(&btn1, BTN_SINGLE_CLICK, btn1_single_click_handler, NULL);
+    button_init(&btn1, read_button_gpio, 1, 1);
+    //button_attach(&btn1, BTN_SINGLE_CLICK, btn1_single_click_handler, NULL);
+    button_attach(&btn1, BTN_DOUBLE_CLICK, btn1_double_click_handler, NULL);
+    button_attach(&btn1, BTN_LONG_PRESS_START, btn1_long_press_handler, NULL);
     button_start(&btn1);
     printf("LED Beep FSM Started\n");
-    while(1){
+    while (1) {
         led_beep_fsm_dispatch();
     }
 }
