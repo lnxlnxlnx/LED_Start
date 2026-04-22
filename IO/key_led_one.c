@@ -103,15 +103,29 @@ static void _led_loop_control(uint8_t direct)
 
 static void change_state(void);
 // LED闪烁
+
+static void led_beep_blink(void)
+{
+    int i; // 移到循环外定义，兼容C89
+    for (i = 0; i < 3; i++)
+    {
+        LED0 = 0;
+        BEEP = 0;
+        delay_ms(2 * LED_DELAY_TIME);
+        LED0 = 1;
+        BEEP = 1;
+        delay_ms(2 * LED_DELAY_TIME); // 补个延时，否则闪烁太快看不到
+    }
+}
 static void led_blink(void)
 {
     int i; // 移到循环外定义，兼容C89
     for (i = 0; i < 3; i++)
     {
         LED0 = 0;
-        delay_ms(500);
+        delay_ms(300);
         LED0 = 1;
-        delay_ms(500); // 补个延时，否则闪烁太快看不到
+        delay_ms(300); // 补个延时，否则闪烁太快看不到
     }
 }
 
@@ -130,7 +144,8 @@ static void led_beep_fsm_dispatch() {
                     curent_event = KNONE;
                     break;
                 case K2:
-                    LED2 = !LED2; // 切换LED状态
+                    //LED2 = !LED2; // 切换LED状态
+                    BEEP = !BEEP; // 切换蜂鸣器状态
                     curent_event = KNONE;
                     break;
                 case kUP:
@@ -144,15 +159,20 @@ static void led_beep_fsm_dispatch() {
             switch (led_beep_machine.event)
             {
                 case K0:
-                    led_blink();
+                    //led_blink();
+                    led_beep_blink();
                     curent_event = KNONE;       //TODO:也可以用标志位来判断是否已经处理过这个事件
                     break;
                 case K1:
-                    LED0 = 1;
+                    LED0 = 0;
+                    LED1 = 1;
+                    BEEP = 0;
                     curent_event = KNONE;
                     break;
                 case K2:
-                    LED0 = 0;
+                    LED0 = 1;
+                    LED1 = 0;
+                    BEEP = 1;
                     curent_event = KNONE;
                     break;
                 case kUP:
