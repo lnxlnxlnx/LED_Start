@@ -166,7 +166,7 @@ void TIM2_IRQHandler(void)
 //定时器3中断服务程序	 
 extern void remote_irq_func(void);
 extern void led_irq_func(void);
-#define USE_LED 1
+#define USE_LED 0
 #define USE_REMOTE 1
 void TIM3_IRQHandler(void)
 {
