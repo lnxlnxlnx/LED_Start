@@ -199,6 +199,9 @@ void TIM4_IRQHandler(void) //TIM4中断
 	static u8 smg_flag = 0; //数码管显示标志 0:正常显示 1:不显示（消除鬼影）
 	static u8 t = 0;
 
+	static u8 press_change_period = 0;
+
+
 	if (TIM4->SR & 0X0001) //溢出中断
 	{
 		key = Remote_Scan();//获取红外遥控键值
@@ -312,7 +315,8 @@ void TIM4_IRQHandler(void) //TIM4中断
 				case 224:
 					//num1 = smg_num[1];
 					//num = smg_num[6];
-					TIM3_ONE_SECOND_COUNT -= 200;
+					//TIM3_ONE_SECOND_COUNT -= 200;
+					press_change_period = 2;
 					BEEP = 1;
 					break;//按键'VOL-'
 
@@ -325,8 +329,9 @@ void TIM4_IRQHandler(void) //TIM4中断
 				case 144:
 					//num1 = smg_num[1];
 					//num = smg_num[8];
-					TIM3_ONE_SECOND_COUNT += 200;
-					if (TIM3_ONE_SECOND_COUNT > 2000) TIM3_ONE_SECOND_COUNT = 2000; //限制最大值
+					//TIM3_ONE_SECOND_COUNT += 200;
+					press_change_period = 1;
+					//if (TIM3_ONE_SECOND_COUNT > 2000) TIM3_ONE_SECOND_COUNT = 2000; //限制最大值
 					BEEP = 1;
 					break;//按键'VOL+'
 			}
@@ -336,6 +341,7 @@ void TIM4_IRQHandler(void) //TIM4中断
 			BEEP = 1;
 		}
 		if (TIM3_ONE_SECOND_COUNT < 200) TIM3_ONE_SECOND_COUNT = 200;
+		else if (TIM3_ONE_SECOND_COUNT > 5000) TIM3_ONE_SECOND_COUNT = 5000;
 		u16 temp = TIM3_ONE_SECOND_COUNT;
 		num = smg_num[temp % 10];
 		temp = temp / 10;
@@ -379,8 +385,27 @@ void TIM4_IRQHandler(void) //TIM4中断
 		if (t == 250) //LED1每500MS闪烁
 		{
 			t = 0;
-			LED1 = !LED1;
-			log_i("current num = %#03x", num);
+			LED7 = !LED7;
+			switch (press_change_period)
+			{
+				case 1:
+					//log_i("current num = %#03x", num);
+					TIM3_ONE_SECOND_COUNT += 200;
+					break;
+				case 2:
+					//log_i("current num = %#03x", num1);
+					TIM3_ONE_SECOND_COUNT -= 200;
+					break;
+				case 3:
+					log_i("current num = %#03x", num2);
+					break;
+				case 4:
+					log_i("current num = %#03x", num3);
+					break;
+				default:
+					break;
+			}
+			press_change_period = 0;
 		}
 	}
 
