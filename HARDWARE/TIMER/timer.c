@@ -38,15 +38,15 @@ void TIM3_Init(u16 arr, u16 psc)
 
 }
 
-void TIM4_Init(u16 arr,u16 psc)
+void TIM4_Init(u16 arr, u16 psc)
 {
-    RCC->APB1ENR|=1<<2;	//TIM4时钟使能    
- 	TIM4->ARR=arr;  	//设定计数器自动重装值 
-	TIM4->PSC=psc;  	//预分频器设置
-	TIM4->DIER|=1<<0;   //允许更新中断				
-	TIM4->CR1|=0x01;    //使能定时器4
-  	MY_NVIC_Init(0,3,TIM4_IRQn,2);//抢占0，子优先级3，组2		
-							 
+	RCC->APB1ENR |= 1 << 2;	//TIM4时钟使能    
+	TIM4->ARR = arr;  	//设定计数器自动重装值 
+	TIM4->PSC = psc;  	//预分频器设置
+	TIM4->DIER |= 1 << 0;   //允许更新中断				
+	TIM4->CR1 |= 0x01;    //使能定时器4
+	MY_NVIC_Init(0, 3, TIM4_IRQn, 2);//抢占0，子优先级3，组2		
+
 }
 
 void TIM6_Init(u16 arr, u16 psc)
@@ -166,7 +166,7 @@ void TIM2_IRQHandler(void)
 //定时器3中断服务程序	 
 extern void remote_irq_func(void);
 extern void led_irq_func(void);
-#define USE_LED 0
+#define USE_LED 1
 #define USE_REMOTE 1
 void TIM3_IRQHandler(void)
 {
@@ -183,6 +183,7 @@ void TIM3_IRQHandler(void)
 #undef USE_REMOTE
 #endif
 
+extern u16 TIM3_ONE_SECOND_COUNT;
 void TIM4_IRQHandler(void) //TIM4中断
 {
 	// 共阴数字数组
@@ -191,6 +192,8 @@ void TIM4_IRQHandler(void) //TIM4中断
 	static u8 key = 0; //按键值
 	static u8 num = 0x00; //数值
 	static u8 num1 = 0x00; //数值
+	static u8 num2 = 0x00; //数值
+	static u8 num3 = 0x00; //数值
 	static u8 smg_wei = 6; //数码管位选
 	static u8 smg_duan = 0; //数码管段选
 	static u8 smg_flag = 0; //数码管显示标志 0:正常显示 1:不显示（消除鬼影）
@@ -307,9 +310,10 @@ void TIM4_IRQHandler(void) //TIM4中断
 					break;//按键'RIGHT'
 
 				case 224:
-					num1 = smg_num[1];
-					num = smg_num[6];
-					BEEP = 0;
+					//num1 = smg_num[1];
+					//num = smg_num[6];
+					TIM3_ONE_SECOND_COUNT -= 200;
+					BEEP = 1;
 					break;//按键'VOL-'
 
 				case 168:
@@ -319,9 +323,11 @@ void TIM4_IRQHandler(void) //TIM4中断
 					break;//按键'DOWN'
 
 				case 144:
-					num1 = smg_num[1];
-					num = smg_num[8];
-					BEEP = 0;
+					//num1 = smg_num[1];
+					//num = smg_num[8];
+					TIM3_ONE_SECOND_COUNT += 200;
+					if (TIM3_ONE_SECOND_COUNT > 2000) TIM3_ONE_SECOND_COUNT = 2000; //限制最大值
+					BEEP = 1;
 					break;//按键'VOL+'
 			}
 		}
@@ -329,7 +335,15 @@ void TIM4_IRQHandler(void) //TIM4中断
 		{
 			BEEP = 1;
 		}
-
+		if (TIM3_ONE_SECOND_COUNT < 200) TIM3_ONE_SECOND_COUNT = 200;
+		u16 temp = TIM3_ONE_SECOND_COUNT;
+		num = smg_num[temp % 10];
+		temp = temp / 10;
+		num1 = smg_num[temp % 10];
+		temp = temp / 10;
+		num2 = smg_num[temp % 10];
+		temp = temp / 10;
+		num3 = smg_num[temp % 10];
 		if (smg_wei == 6) //数码管位
 		{
 			smg_duan = num1;
@@ -337,6 +351,14 @@ void TIM4_IRQHandler(void) //TIM4中断
 		else if (smg_wei == 7) //数码管位
 		{
 			smg_duan = num;
+		}
+		else if(smg_wei == 5) //数码管位
+		{
+			smg_duan = num2;
+		}
+		else if(smg_wei == 4) //数码管位
+		{
+			smg_duan = num3;
 		}
 
 		if (smg_flag) LED_Write_Data(0x00, smg_wei); //消除鬼影(段码不显示)
@@ -349,7 +371,7 @@ void TIM4_IRQHandler(void) //TIM4中断
 		{
 			smg_wei++;
 
-			if (smg_wei == 8) smg_wei = 6;
+			if (smg_wei == 8) smg_wei = 4;
 		}
 
 		t++;
