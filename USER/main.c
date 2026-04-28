@@ -7,6 +7,8 @@
 #include "rtc.h"
 #include "dac.h"
 #include "timer.h"
+#include "remote.h"
+#include "smg.h"
 
 #if !defined(LOG_TAG)
 #define LOG_TAG                    "MAIN"
@@ -46,7 +48,10 @@ int main(void)
 	// TIM3_Init(自动重装载值, 预分频)
 	// 1ms 中断配置：
 	//TIM3_Init(9, 7199);		//f = 72M/((7199+1)*10) = 1khz = 1ms
-	TIM3_Init(9999, 7199);		//f = 72M/((7199+1)*10000) = 1hz = 1s
+	//TIM3_Init(9999, 7199);		//f = 72M/((7199+1)*10000) = 1hz = 1s
+	Remote_Init();
+	TIM4_Init(199, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 20ms
+	LED_SMG_Init();
 
 	while (1)
 	{

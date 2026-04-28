@@ -10,6 +10,8 @@
 #endif
 #include <elog.h>
 #include "stm32f10x_tim.h"
+
+const uint16_t TIM3_ONE_SECOND_COUNT = 100; // 假设 TIM3 是 1ms 中断一次，则为1000，如果是 10ms 中断一次，则为100，依此类推
 //#include "stm32f10x_rcc.h"
 
 //////////////////////////////////////////////////////////////////////////////////	 
@@ -84,16 +86,16 @@ void led_irq_func(void) {
     if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
     {
         // 清除中断标志
-        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+        //TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 
-        //NOTE:method 1: 直接翻转LED
-        LED0 = !LED0;   // 1秒翻转LED
-        return;
+        // //NOTE:method 1: 直接翻转LED
+        // LED0 = !LED0;   // 1秒翻转LED
+        // return;
 
         //NOTE:method 2: 1秒翻转LED
-        // 假设 TIM3 是 1ms 中断一次
+        // 假设 TIM3 是 1ms 中断一次，则下面为1000，如果是 10ms 中断一次，则下面为100，依此类推
         tim3_count++;
-        if (tim3_count >= 1000)
+        if (tim3_count >= TIM3_ONE_SECOND_COUNT)
         {
             tim3_count = 0;
             LED0 = !LED0;   // 1秒翻转LED
