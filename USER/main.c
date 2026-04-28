@@ -50,12 +50,12 @@ int main(void)
 	//TIM3_Init(9, 7199);		//f = 72M/((7199+1)*10) = 1khz = 1ms
 	//TIM3_Init(9999, 7199);		//f = 72M/((7199+1)*10000) = 1hz = 1s
 	Remote_Init();
-	TIM4_Init(199, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 20ms
 	LED_SMG_Init();
+	TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 2ms
 
 	while (1)
 	{
 		//key_led_one_loop();
-		led_beep_loop();
+		//led_beep_loop();
 	}
 }
