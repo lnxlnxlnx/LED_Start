@@ -39,5 +39,7 @@ typedef void (*LED_Operate)(uint8_t val);
 extern LED_Operate led_funcs[];
 
 void led_loop_control(void);//测试用循环控制函数
+
+void led_irq_func(void);//定时器3中断服务函数，处理LED相关的定时任务
 		 				    
 #endif

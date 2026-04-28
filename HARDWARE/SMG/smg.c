@@ -22,7 +22,8 @@ void LED_SMG_Init(void)
    RCC->APB2ENR|=1<<4;    //使能PORTC时钟
    RCC->APB2ENR|=1<<0;    //使能AFIO时钟
    
-   JTAG_Set(SWD_ENABLE);//关闭jtag，使能SWD，可以用SWD模式调试 PB4做普通IO口使用,否则不能当IO使用
+   //BUG:
+   //JTAG_Set(SWD_ENABLE);//关闭jtag，使能SWD，可以用SWD模式调试 PB4做普通IO口使用,否则不能当IO使用
    
    GPIOB->CRL&=0XFF000FFF; 
    GPIOB->CRL|=0X00333000;//PB3~5推挽输出

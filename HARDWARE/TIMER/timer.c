@@ -147,7 +147,20 @@ void TIM2_IRQHandler(void)
 	TIM2->SR=0;//清除中断标志位 	    
 }
 
+//定时器3中断服务程序	 
+extern void remote_irq_func(void);
+extern void led_irq_func(void);
+#define USE_LED 1
+void TIM3_IRQHandler(void)
+{
+	#if USE_REMOTE
+	remote_irq_func();
+	#endif
 
+	#if USE_LED
+	led_irq_func();
+	#endif
+}
 
 
 

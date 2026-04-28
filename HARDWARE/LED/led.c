@@ -2,13 +2,15 @@
 #include "delay.h"
 #include "project_log_config.h"
 #if !defined(LOG_TAG)
-    #define LOG_TAG                    "LED"
+#define LOG_TAG                    "LED"
 #endif
 #undef LOG_LVL
 #if defined(LED_LOG_LVL)
-    #define LOG_LVL                    LED_LOG_LVL
+#define LOG_LVL                    LED_LOG_LVL
 #endif
 #include <elog.h>
+#include "stm32f10x_tim.h"
+//#include "stm32f10x_rcc.h"
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -33,17 +35,17 @@ void LED_Init(void)
 
     // 配置 PC0~PC7 为 推挽输出、50MHz
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 |
-                                  GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
+        GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;    // 速度50MHz
     GPIO_Init(GPIOC, &GPIO_InitStructure);               // 初始化 GPIOC
 
     // PC0~PC7 全部输出高电平（和你原来的 ODR 效果一致）
     GPIO_SetBits(GPIOC, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 |
-                   GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
-                   log_e("LED_Init", "LED_Init OK");
-                   log_w("LED_Init", "LED_Init OK");
-                   log_i("LED_Init", "LED_Init OK");
+        GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
+    log_e("LED_Init", "LED_Init OK");
+    log_w("LED_Init", "LED_Init OK");
+    log_i("LED_Init", "LED_Init OK");
 }
 void led0_operate(uint8_t val) { LED0 = val; }
 void led1_operate(uint8_t val) { LED1 = val; }
@@ -74,5 +76,27 @@ void led_loop_control(void)
     for (i = 0; i < 8; i++)
         led_funcs[i](1);
 }
- 
 
+// 1秒计时用全局变量
+static uint16_t tim3_count = 0;
+void led_irq_func(void) {
+    // 标准库判断更新中断
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+    {
+        // 清除中断标志
+        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+
+        //NOTE:method 1: 直接翻转LED
+        LED0 = !LED0;   // 1秒翻转LED
+        return;
+
+        //NOTE:method 2: 1秒翻转LED
+        // 假设 TIM3 是 1ms 中断一次
+        tim3_count++;
+        if (tim3_count >= 1000)
+        {
+            tim3_count = 0;
+            LED0 = !LED0;   // 1秒翻转LED
+        }
+    }
+}
