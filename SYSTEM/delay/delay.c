@@ -34,27 +34,47 @@ void SysTick_Handler(void)
 //当使用ucos的时候,此函数会初始化ucos的时钟节拍
 //SYSTICK的时钟固定为HCLK时钟的1/8
 //SYSCLK:系统时钟
-void delay_init()	 
-{
 
-#ifdef OS_CRITICAL_METHOD 	//如果OS_CRITICAL_METHOD定义了,说明使用ucosII了.
+void delay_init(u8 SYSCLK)
+{
+#if SYSTEM_SUPPORT_OS 						//如果需要支持OS.
 	u32 reload;
 #endif
-	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);	//选择外部时钟  HCLK/8
-	fac_us=SystemCoreClock/8000000;	//为系统时钟的1/8  
-	 
-#ifdef OS_CRITICAL_METHOD 	//如果OS_CRITICAL_METHOD定义了,说明使用ucosII了.
-	reload=SystemCoreClock/8000000;		//每秒钟的计数次数 单位为K	   
-	reload*=1000000/OS_TICKS_PER_SEC;//根据OS_TICKS_PER_SEC设定溢出时间
-							//reload为24位寄存器,最大值:16777216,在72M下,约合1.86s左右	
-	fac_ms=1000/OS_TICKS_PER_SEC;//代表ucos可以延时的最少单位	   
-	SysTick->CTRL|=SysTick_CTRL_TICKINT_Msk;   	//开启SYSTICK中断
-	SysTick->LOAD=reload; 	//每1/OS_TICKS_PER_SEC秒中断一次	
-	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk;   	//开启SYSTICK    
+ 	SysTick->CTRL&=~(1<<2);					//SYSTICK使用外部时钟源	 
+	fac_us=SYSCLK/8;						//不论是否使用OS,fac_us都需要使用
+#if SYSTEM_SUPPORT_OS 						//如果需要支持OS.
+	reload=SYSCLK/8;						//每秒钟的计数次数 单位为K	   
+	reload*=1000000/delay_ostickspersec;	//根据delay_ostickspersec设定溢出时间
+											//reload为24位寄存器,最大值:16777216,在72M下,约合1.86s左右	
+	fac_ms=1000/delay_ostickspersec;		//代表OS可以延时的最少单位	   
+	SysTick->CTRL|=1<<1;   					//开启SYSTICK中断
+	SysTick->LOAD=reload; 					//每1/delay_ostickspersec秒中断一次	
+	SysTick->CTRL|=1<<0;   					//开启SYSTICK    
 #else
-	fac_ms=(u16)fac_us*1000;//非ucos下,代表每个ms需要的systick时钟数   
+	fac_ms=(u16)fac_us*1000;				//非OS下,代表每个ms需要的systick时钟数   
 #endif
-}								    
+}	
+// void delay_init()	 
+// {
+
+// #ifdef OS_CRITICAL_METHOD 	//如果OS_CRITICAL_METHOD定义了,说明使用ucosII了.
+// 	u32 reload;
+// #endif
+// 	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);	//选择外部时钟  HCLK/8
+// 	fac_us=SystemCoreClock/8000000;	//为系统时钟的1/8  
+	 
+// #ifdef OS_CRITICAL_METHOD 	//如果OS_CRITICAL_METHOD定义了,说明使用ucosII了.
+// 	reload=SystemCoreClock/8000000;		//每秒钟的计数次数 单位为K	   
+// 	reload*=1000000/OS_TICKS_PER_SEC;//根据OS_TICKS_PER_SEC设定溢出时间
+// 							//reload为24位寄存器,最大值:16777216,在72M下,约合1.86s左右	
+// 	fac_ms=1000/OS_TICKS_PER_SEC;//代表ucos可以延时的最少单位	   
+// 	SysTick->CTRL|=SysTick_CTRL_TICKINT_Msk;   	//开启SYSTICK中断
+// 	SysTick->LOAD=reload; 	//每1/OS_TICKS_PER_SEC秒中断一次	
+// 	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk;   	//开启SYSTICK    
+// #else
+// 	fac_ms=(u16)fac_us*1000;//非ucos下,代表每个ms需要的systick时钟数   
+// #endif
+// }								    
 
 #ifdef OS_CRITICAL_METHOD	//使用了ucos
 //延时nus

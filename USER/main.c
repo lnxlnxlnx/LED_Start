@@ -9,6 +9,7 @@
 #include "timer.h"
 #include "remote.h"
 #include "smg.h"
+#include "pwm.h"
 
 #if !defined(LOG_TAG)
 #define LOG_TAG                    "MAIN"
@@ -34,7 +35,8 @@ void _test_elog(void) {
 int main(void)
 {
 	u8 t = 0;
-	delay_init(); // 延时函数初始化
+	Stm32_Clock_Init(9); // 系统时钟设置
+	delay_init(72); // 延时函数初始化
 	LED_Init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	uart_init(115200);	  // 串口初始化为9600
@@ -49,13 +51,26 @@ int main(void)
 	// 1ms 中断配置：
 	//TIM3_Init(9, 7199);		//f = 72M/((7199+1)*10) = 1khz = 1ms
 	//TIM3_Init(9999, 7199);		//f = 72M/((7199+1)*10000) = 1hz = 1s
-	Remote_Init();
-	LED_SMG_Init();
-	TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 2ms
+	//Remote_Init();
+	//LED_SMG_Init();
+	//TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 2ms
+
+	TIM3_PWM_Init(899, 0); //不分频。PWM频率=72000/(899+1)=80Khz
+	u16 led6pwmval = 0;
+	u8 dir = 1;
 
 	while (1)
 	{
-		//key_led_one_loop();
-		//led_beep_loop();
+		delay_ms(10);
+
+		if (dir)led6pwmval++;
+		else led6pwmval--;
+
+		if (led6pwmval > 300)dir = 0;
+
+		if (led6pwmval == 0)dir = 1;
+
+		LED6_PWM_VAL = led6pwmval;
 	}
 }
+
