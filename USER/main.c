@@ -36,7 +36,7 @@ int main(void)
 {
 	u8 t = 0;
 	Stm32_Clock_Init(9); // 系统时钟设置
-	delay_init(72); // 延时函数初始化
+	//delay_init(72); // 延时函数初始化
 	LED_Init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	uart_init(115200);	  // 串口初始化为9600
