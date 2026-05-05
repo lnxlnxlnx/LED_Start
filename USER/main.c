@@ -55,9 +55,12 @@ int main(void)
 	//LED_SMG_Init();
 	//TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 2ms
 
-	TIM3_PWM_Init(899, 0); //不分频。PWM频率=72000/(899+1)=80Khz
+	//TIM3_PWM_Init(899, 0); //不分频。PWM频率=72000/(899+1)=80Khz
+	TIM3_PWM_Init_2(719, 0); //不分频。PWM频率=72000/(719+1)=100Khz
 	u16 led6pwmval = 0;
+	u16 led7pwmval = 40;
 	u8 dir = 1;
+	u8 dir2 = 1;
 
 	while (1)
 	{
@@ -66,11 +69,16 @@ int main(void)
 		if (dir)led6pwmval++;
 		else led6pwmval--;
 
-		if (led6pwmval > 300)dir = 0;
+		if (dir2)led7pwmval++;
+		else led7pwmval--;
+
+		if (led6pwmval >= 80)dir = 0;
+		if (led7pwmval >= 80)dir2 = 0;
 
 		if (led6pwmval == 0)dir = 1;
+		if (led7pwmval == 0)dir2 = 1;
 
-		LED6_PWM_VAL = led6pwmval;
+		TIM3_Set_PWM_Duty(led6pwmval, led7pwmval);
 	}
 }
 

@@ -1,6 +1,7 @@
 #ifndef __PWM_H
 #define __PWM_H
 #include "sys.h"
+#include "stm32f10x_tim.h"  
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -19,5 +20,7 @@
 #define LED6_PWM_VAL TIM3->CCR1 
 
 void TIM3_PWM_Init(u16 arr,u16 psc);
+void TIM3_PWM_Init_2(u16 arr, u16 psc);
+void TIM3_Set_PWM_Duty(u8 duty1, u8 duty2);
 
 #endif
