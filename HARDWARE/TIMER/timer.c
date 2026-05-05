@@ -70,8 +70,6 @@ void TIM7_Init(u16 arr, u16 psc)
 	MY_NVIC_Init(0, 3, TIM7_IRQn, 2);//抢占0，子优先级3，组2		
 }
 
-
-
 //
 void TIM6_IRQHandler(void) //TIM6中断
 {

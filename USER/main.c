@@ -36,26 +36,14 @@ int main(void)
 {
 	u8 t = 0;
 	Stm32_Clock_Init(9); // 系统时钟设置
-	//delay_init(72); // 延时函数初始化
 	LED_Init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-	uart_init(115200);	  // 串口初始化为9600
+	uart_init(115200);	  // 串口初始化为115200
 	RTC_Init();			  // RTC初始化
-	Dac_Init();		  // DAC初始化
 	elog_init();
 	elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
 	elog_start();
 	_test_elog(); // 测试elog输出
-	// 72M 系统时钟
-	// TIM3_Init(自动重装载值, 预分频)
-	// 1ms 中断配置：
-	//TIM3_Init(9, 7199);		//f = 72M/((7199+1)*10) = 1khz = 1ms
-	//TIM3_Init(9999, 7199);		//f = 72M/((7199+1)*10000) = 1hz = 1s
-	//Remote_Init();
-	//LED_SMG_Init();
-	//TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 2ms
-
-	//TIM3_PWM_Init(899, 0); //不分频。PWM频率=72000/(899+1)=80Khz
 	TIM3_PWM_Init_2(719, 0); //不分频。PWM频率=72000/(719+1)=100Khz
 	u16 led6pwmval = 0;
 	u16 led7pwmval = 40;
