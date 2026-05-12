@@ -45,7 +45,7 @@ int main(void)
 	elog_start();
 	_test_elog(); // 测试elog输出
 	Remote_Init();
-	TIM4_Init(199, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 20ms
+	TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 20ms
 	LED_SMG_Init();
 	TIM2_Cap_Init(0XFFFF, 72 - 1);	 //以1Mhz的频率计数
 

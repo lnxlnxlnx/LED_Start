@@ -169,14 +169,15 @@ extern void led_irq_func(void);
  * @description: 每10毫秒执行一次
  * @return {*}
  */
+uint16_t TIM2_SIG_HIGH_TIME = 0;
 void TIM2_Input_Capture_Update()
 {
-	static uint64_t temp = 0;
+	static uint32_t temp = 0;
 	static uint8_t t = 0;
 	//static uint8_t cnt_to_1ms = 0;
 	//cnt_to_1ms++;
 	t++;
-	if (t == 49)
+	if (t == 19)
 	{
 		t = 0;
 		LED0 = !LED0;
@@ -187,6 +188,7 @@ void TIM2_Input_Capture_Update()
 		temp *= 65536;					//溢出时间总和
 		temp += TIM2CH1_CAPTURE_VAL;		//得到总的高电平时间
 		printf("HIGH:%d us\r\n", temp);	//打印总的高点平时间
+		TIM2_SIG_HIGH_TIME = temp/1000;
 		TIM2CH1_CAPTURE_STA = 0;			//开启下一次捕获
 	}
 }
@@ -233,10 +235,16 @@ void TIM4_IRQHandler(void) //TIM4中断
 
 	static u8 press_change_period = 0;
 
+	// trick
+	// num3 = TIM2_SIG_HIGH_TIME / 1000; //高电平时间的秒位
+	// num2 = (TIM2_SIG_HIGH_TIME % 1000) / 100; //高电平时间的毫秒位
+	// num1 = (TIM2_SIG_HIGH_TIME % 100) / 10; //高电平时间的百分位
+	// num = (TIM2_SIG_HIGH_TIME % 10); //高电平时间的个位
 
 	if (TIM4->SR & 0X0001) //溢出中断
 	{
-		key = Remote_Scan();//获取红外遥控键值
+		//key = Remote_Scan();//获取红外遥控键值
+		//key = TIM2_SIG_HIGH_TIME; //获取输入捕获的高电平时间
 
 		if (key)
 		{
@@ -374,7 +382,8 @@ void TIM4_IRQHandler(void) //TIM4中断
 		}
 		if (TIM3_ONE_SECOND_COUNT < 200) TIM3_ONE_SECOND_COUNT = 200;
 		else if (TIM3_ONE_SECOND_COUNT > 5000) TIM3_ONE_SECOND_COUNT = 5000;
-		u16 temp = TIM3_ONE_SECOND_COUNT;
+		//u16 temp = TIM3_ONE_SECOND_COUNT;
+		u16 temp = TIM2_SIG_HIGH_TIME;
 		num = smg_num[temp % 10];
 		temp = temp / 10;
 		num1 = smg_num[temp % 10];
@@ -382,6 +391,8 @@ void TIM4_IRQHandler(void) //TIM4中断
 		num2 = smg_num[temp % 10];
 		temp = temp / 10;
 		num3 = smg_num[temp % 10];
+
+
 		if (smg_wei == 6) //数码管位
 		{
 			smg_duan = num1;
