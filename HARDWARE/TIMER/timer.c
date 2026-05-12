@@ -124,7 +124,15 @@ void TIM2_Cap_Init(u16 arr, u16 psc)
 u8  TIM2CH1_CAPTURE_STA = 0;	//输入捕获状态		    				
 u16	TIM2CH1_CAPTURE_VAL;	//输入捕获值
 //定时器2中断服务程序	 
-void TIM2_IRQHandler(void)
+/**
+ * @description: ARR = 65535, PSC = 72-1, 以1MHz的频率计数,每计数一次是1us
+ * 				当捕获到一个上升沿时，记录当前的计数值到TIM2CH1_CAPTURE_VAL中，并将捕获状态的第6位置1，表示已经捕获到高电平了
+ * 				当捕获到一个下降沿时，记录当前的计数值到TIM2CH1_CAPTURE_VAL中，并将捕获状态的第7位置1，表示成功捕获到了一次高电平脉宽
+ * 
+ * 当前的高电平脉宽 = TIM2CH1_CAPTURE_VAL + 65536 * (TIM2CH1_CAPTURE_STA & 0x3F)
+ * @return {*}
+ */
+void TIM2_IRQHandler(void)	// 定时器更新中断
 {
 	u16 tsr;
 	tsr = TIM2->SR;
@@ -184,7 +192,7 @@ void TIM2_Input_Capture_Update()
 	}
 	if (TIM2CH1_CAPTURE_STA & 0X80) //成功捕获到了一次高电平
 	{
-		temp = TIM2CH1_CAPTURE_STA & 0X3F;
+		temp = TIM2CH1_CAPTURE_STA & 0X3F;	// 低 6 位存溢出次数
 		temp *= 65536;					//溢出时间总和
 		temp += TIM2CH1_CAPTURE_VAL;		//得到总的高电平时间
 		printf("HIGH:%d us\r\n", temp);	//打印总的高点平时间
