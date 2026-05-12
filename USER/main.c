@@ -44,29 +44,15 @@ int main(void)
 	elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
 	elog_start();
 	_test_elog(); // 测试elog输出
-	TIM3_PWM_Init_2(719, 0); //不分频。PWM频率=72000/(719+1)=100Khz
-	u16 led6pwmval = 0;
-	u16 led7pwmval = 40;
-	u8 dir = 1;
-	u8 dir2 = 1;
+	Remote_Init();
+	TIM4_Init(199, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 20ms
+	LED_SMG_Init();
+	TIM2_Cap_Init(0XFFFF, 72 - 1);	 //以1Mhz的频率计数
+
 
 	while (1)
 	{
 		delay_ms(10);
-
-		if (dir)led6pwmval++;
-		else led6pwmval--;
-
-		if (dir2)led7pwmval++;
-		else led7pwmval--;
-
-		if (led6pwmval >= 80)dir = 0;
-		if (led7pwmval >= 80)dir2 = 0;
-
-		if (led6pwmval == 0)dir = 1;
-		if (led7pwmval == 0)dir2 = 1;
-
-		TIM3_Set_PWM_Duty(led6pwmval, led7pwmval);
 	}
 }
 

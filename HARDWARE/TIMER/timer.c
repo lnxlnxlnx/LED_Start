@@ -4,6 +4,7 @@
 #include "ul_thread.h"
 #include "smg.h"
 #include "elog.h"
+#include <stdint.h>
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -164,8 +165,34 @@ void TIM2_IRQHandler(void)
 //定时器3中断服务程序	 
 extern void remote_irq_func(void);
 extern void led_irq_func(void);
+/**
+ * @description: 每10毫秒执行一次
+ * @return {*}
+ */
+void TIM2_Input_Capture_Update()
+{
+	static uint64_t temp = 0;
+	static uint8_t t = 0;
+	//static uint8_t cnt_to_1ms = 0;
+	//cnt_to_1ms++;
+	t++;
+	if (t == 49)
+	{
+		t = 0;
+		LED0 = !LED0;
+	}
+	if (TIM2CH1_CAPTURE_STA & 0X80) //成功捕获到了一次高电平
+	{
+		temp = TIM2CH1_CAPTURE_STA & 0X3F;
+		temp *= 65536;					//溢出时间总和
+		temp += TIM2CH1_CAPTURE_VAL;		//得到总的高电平时间
+		printf("HIGH:%d us\r\n", temp);	//打印总的高点平时间
+		TIM2CH1_CAPTURE_STA = 0;			//开启下一次捕获
+	}
+}
 #define USE_LED 1
 #define USE_REMOTE 1
+#define USE_IC_UPDATE 1
 void TIM3_IRQHandler(void)
 {
 #if USE_REMOTE
@@ -175,6 +202,9 @@ void TIM3_IRQHandler(void)
 #if USE_LED
 	led_irq_func();
 #endif
+#if USE_IC_UPDATE
+	TIM2_Input_Capture_Update();
+#endif
 	TIM3->SR = 0;//清除中断标志位   
 }
 #ifdef USE_REMOTE
@@ -182,6 +212,10 @@ void TIM3_IRQHandler(void)
 #endif
 
 extern u16 TIM3_ONE_SECOND_COUNT;
+/**
+ * @description: 用于数码管显示的更新
+ * @return {*}
+ */
 void TIM4_IRQHandler(void) //TIM4中断
 {
 	// 共阴数字数组
@@ -356,11 +390,11 @@ void TIM4_IRQHandler(void) //TIM4中断
 		{
 			smg_duan = num;
 		}
-		else if(smg_wei == 5) //数码管位
+		else if (smg_wei == 5) //数码管位
 		{
 			smg_duan = num2;
 		}
-		else if(smg_wei == 4) //数码管位
+		else if (smg_wei == 4) //数码管位
 		{
 			smg_duan = num3;
 		}

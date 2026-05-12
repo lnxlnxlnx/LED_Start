@@ -53,6 +53,10 @@ u32 RmtRec = 0;	//红外接收到的数据
 u8  RmtCnt = 0;	//按键按下的次数	  
 
 //
+/**
+ * @description: 用于remote状态的更新
+ * @return {*}
+ */
 void remote_irq_func(void) {
 	u16 tsr;
 	tsr = TIM3->SR;
@@ -122,6 +126,10 @@ void remote_irq_func(void) {
 //返回值:
 //	 0,没有任何按键按下
 //其他,按下的按键键值.
+/**
+ * @description: 用于处理中断中更新的数据，其他地方调用这个函数来获取按键值(可以重复调用这个函数来获取按键值)
+ * @return {*}
+ */
 u8 Remote_Scan(void)
 {
 	u8 sta = 0;
