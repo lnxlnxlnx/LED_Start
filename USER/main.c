@@ -47,7 +47,7 @@ int main(void)
 	Remote_Init();
 	TIM4_Init(19, 7199);		//f = 72M/((7199+1)*2000) = 5hz = 20ms
 	LED_SMG_Init();
-	TIM2_Cap_Init(0XFFFF, 72 - 1);	 //以1Mhz的频率计数
+	TIM2_Cap_Init(0XFFFF, 72 - 1);	 //以1Mhz的频率计数，溢出周期约为 65.5ms。
 
 
 	while (1)
