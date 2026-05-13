@@ -195,8 +195,8 @@ void TIM2_Input_Capture_Update()
 		temp = TIM2CH1_CAPTURE_STA & 0X3F;	// 低 6 位存溢出次数
 		temp *= 65536;					//溢出时间总和
 		temp += TIM2CH1_CAPTURE_VAL;		//得到总的高电平时间
-		printf("HIGH:%d us\r\n", temp);	//打印总的高点平时间
 		TIM2_SIG_HIGH_TIME = temp/1000;
+		printf("HIGH:%d us	, %d ms\r\n", temp, TIM2_SIG_HIGH_TIME);	//打印总的高点平时间
 		TIM2CH1_CAPTURE_STA = 0;			//开启下一次捕获
 	}
 }
