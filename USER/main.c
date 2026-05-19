@@ -39,7 +39,7 @@ int main(void)
 	Stm32_Clock_Init(9); // 系统时钟设置
 	LED_Init();
 	NVIC_Configuration(); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-	uart_init(115200);	  // 串口初始化为115200
+	uart_init(9600);	  // 串口初始化为9600波特率
 	RTC_Init();			  // RTC初始化
 	elog_init();
 	elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);

@@ -96,6 +96,7 @@ void adc_irq_func(void)
     {
         adc_t = 0;
         adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
+        printf("ADC Value: %hu\r\n", adcx);
         LED_SMG_WriteValue(adcx, 0, 4);
         temp = (float)adcx * (3.3 / 4096);  // ADC电压值
         adcx1 = temp;
@@ -116,7 +117,7 @@ void adc_irq_func(void)
     if (led_t >= TIMER_MS(&g_tim3, 500))
     {
         led_t = 0;
-        LED0 = !LED0;
+        LED7 = !LED7;
     }
     LED_SMG_Scan();
 }

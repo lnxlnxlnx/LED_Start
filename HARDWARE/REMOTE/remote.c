@@ -38,10 +38,10 @@ void Remote_Init(void)
 	TIM3->CCER |= 1 << 8; 		//CC3E=1 	允许捕获计数器的值到捕获寄存器中
 	TIM3->DIER |= 1 << 3;   	//允许CC3IE捕获中断				
 	TIM3->DIER |= 1 << 0;   	//允许更新中断				
+	TIMER_SetTim3Clock(10000 - 1, 72 - 1);	// 100hz，每10ms溢出一次
+
 	TIM3->CR1 |= 0x01;    	//使能定时器3
 	MY_NVIC_Init(1, 3, TIM3_IRQn, 2);//抢占1，子优先级3，组2		
-
-	TIMER_SetTim3Clock(10000 - 1, 72 - 1);	// 100hz，每10ms溢出一次
 }
 
 
