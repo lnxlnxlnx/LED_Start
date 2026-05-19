@@ -1,5 +1,6 @@
 #include "sys.h"
 #include "usart.h"
+#include "timer.h"
 
 
 //STM32F103核心板例程
@@ -101,11 +102,11 @@ void uart_init(u32 bound){
   
    //USART 初始化设置
 
-	USART_InitStructure.USART_BaudRate = bound;//一般设置为9600;
+	USART_InitStructure.USART_BaudRate = bound;//一般设置为9600;	// 这里注意9600bit不等于9600个字符，1位start、8位data、1位stop共10位，所以波特率9600时实际传输9600/10=960个字符每秒
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;//字长为8位数据格式
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;//一个停止位
 	USART_InitStructure.USART_Parity = USART_Parity_No;//无奇偶校验位
-	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;//无硬件数据流控制
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;//无硬件数据流控制	// 不用 RTS/CTS 硬件引脚，只靠普通 TX/RX 两根线收发
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;	//收发模式
 
     USART_Init(USART1, &USART_InitStructure); //初始化串口
@@ -148,4 +149,13 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 #endif
 } 
 #endif	
+
+void USART_IRQ_Handler(void){
+	static u16 t = 0;
+	if (++t <= TIMER_MS(&g_tim4, 30)){
+		return;
+	}
+	t = 0;
+	printf("STM32F103RCT6\r\n");
+}
 
