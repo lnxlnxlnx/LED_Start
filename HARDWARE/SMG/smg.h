@@ -45,6 +45,7 @@ u8   LED_SMG_SegOfNum(u8 num);           // 数字(0~9)转段码
 void LED_SMG_WriteSeg(u8 bit, u8 seg);   // 写入段码到指定位()
 void LED_SMG_WriteNum(u8 bit, u8 num);   // 写入数字(0~9)到指定位
 void LED_SMG_WriteNumDP(u8 bit, u8 num); // 写入数字+小数点
+void LED_SMG_WriteValue_contain_zero(u32 value, u8 start_bit, u8 len); // 写入多位数(不会消前导零)
 void LED_SMG_WriteValue(u32 value, u8 start_bit, u8 len); // 写入多位数(自动消前导零)
 void LED_SMG_Clear(void);                // 清除显示缓冲区
 void LED_SMG_Scan(void);                 // 单次扫描(由定时器中断周期性调用)

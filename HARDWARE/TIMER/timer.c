@@ -203,7 +203,7 @@ extern void adc_irq_func(void);
 #define USE_LED      0
 #define USE_REMOTE   1
 #define USE_IC_UPDATE 0
-#define USE_ADC_REF  0
+#define USE_ADC_REF  1
 
 void TIM3_IRQHandler(void)
 {
@@ -231,16 +231,16 @@ extern u16 TIM3_ONE_SECOND_COUNT;
 
 // ── TIM4 ─────────────────────────────────────────────
 extern void remote_irq_func(void);
-#define USE_REMOTE_SMG_IRQ 1
+#define USE_REMOTE_SMG_IRQ 0
 void TIM4_IRQHandler(void)
 {
     if (TIM4->SR & 0X0001)
     {
         g_tim4.tick++;
-		#ifdef USE_REMOTE
+		#if USE_REMOTE
 		LED_SMG_Scan();
 		#endif
-		#ifdef USE_REMOTE_SMG_IRQ	
+		#if USE_REMOTE_SMG_IRQ	
         remote_smg_irq_func();
 		#endif
 	}

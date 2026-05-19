@@ -46,7 +46,7 @@ int main(void)
 	elog_start();
 	_test_elog(); // 测试elog输出
 	Remote_Init();
-	TIM4_Init(1, 7199);		//f = 72M/((7199+1)*10) = 1khz = 1ms
+	TIM4_Init(9, 7199);		//f = 72M/((7199+1)*10) = 1khz = 1ms
 	LED_SMG_Init();
 	
 	//TIM2_Cap_Init(0XFFFF, 72 - 1);	 //以1Mhz的频率计数，溢出周期约为 65.5ms。

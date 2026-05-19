@@ -164,6 +164,11 @@ u8 Remote_Scan(void)
 void remote_smg_irq_func(void) {
 	u8 key = Remote_Scan();
 	static u8 t = 0;
+	t++;
+	if (t < TIMER_MS(&g_tim4, 10))	// 10ms 扫描一次按键值，避免没有按键值时频繁调用Remote_Scan函数导致的卡死
+	{
+		return;
+	}
 
 	if (key)
 	{
@@ -196,8 +201,6 @@ void remote_smg_irq_func(void) {
 	{
 		BEEP = 1;
 	}
-
-	t++;
 	if (t >= TIMER_MS(&g_tim4, 250))
 	{
 		t = 0;

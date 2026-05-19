@@ -1,5 +1,6 @@
 #include "smg.h"
 #include "delay.h"
+#include "timer.h"
 
 SMG_TypeDef g_smg;  // 全局数码管实例
 
@@ -23,7 +24,7 @@ void LED_SMG_Init(void)
     GPIOC->CRH &= 0XFFF000FF;
     GPIOC->CRH |= 0X00033300;  // PC10~12推挽输出
 
-    GPIOB->BRR  = 1 << 3 | 1 << 5;
+    GPIOB->BRR = 1 << 3 | 1 << 5;
     GPIOB->BSRR = 1 << 4;
     GPIOC->BSRR = 1 << 10 | 1 << 11 | 1 << 12;
 }
@@ -84,6 +85,28 @@ void LED_SMG_Clear(void)
         g_smg.buf[i] = 0x00;
 }
 
+/**
+ * @description: 没有前导零的写入多位数(比如写入00012会显示12，而不是显示00012)，这个函数在显示小数点后3位的时候用到，因为小数点后可能有0，如果显示成000就不好看了
+ * @param {u32} value
+ * @param {u8} start_bit
+ * @param {u8} len
+ * @return {*}
+ */
+void LED_SMG_WriteValue_contain_zero(u32 value, u8 start_bit, u8 len) {
+    u8 i;
+    u32 divisor = 1;
+
+    for (i = 1; i < len; i++) divisor *= 10;
+    if (start_bit + len > SMG_NUM) len = SMG_NUM - start_bit;
+
+    for (i = 0; i < len; i++) {
+        u8 digit = (value / divisor) % 10;
+        LED_SMG_WriteNum(start_bit + i, digit);
+
+        divisor /= 10;
+    }
+}
+
 void LED_SMG_WriteValue(u32 value, u8 start_bit, u8 len)
 {
     u8 i;
@@ -110,11 +133,14 @@ void LED_SMG_WriteValue(u32 value, u8 start_bit, u8 len)
 
 void LED_SMG_Scan(void)
 {
+    static t = 0;
+    if (++t < TIMER_MS(&g_tim4, 2)) return; // 每2ms扫描一次
     u8 bit = g_smg.current_bit;
 
     if (g_smg.ghost_flag) {
         LED_Write_Data(0x00, bit);  // 消影: 先送空白
-    } else {
+    }
+    else {
         LED_Write_Data(g_smg.buf[bit], bit);  // 正常显示
     }
     LED_Refresh();

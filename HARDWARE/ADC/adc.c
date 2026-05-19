@@ -103,7 +103,8 @@ void adc_irq_func(void)
         // temp -= adcx1;
         LED_SMG_WriteNumDP(4, (u16)temp);
         temp *= 1000;
-        LED_SMG_WriteValue((u16)temp % 1000, 5, 3);
+        //LED_SMG_WriteValue((u16)temp % 1000, 5, 3); // 显示小数点后3位，但是这个函数会自动消除前导零，所以如果小数点后有0就显示不出来了
+        LED_SMG_WriteValue_contain_zero((u16)temp % 1000, 5, 3);
         
 
         // for (u8 i = 0; i < 8; i++)
