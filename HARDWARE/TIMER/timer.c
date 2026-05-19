@@ -4,6 +4,7 @@
 #include "ul_thread.h"
 #include "smg.h"
 #include "elog.h"
+#include "remote.h"
 #include <stdint.h>
 
 //////////////////////////////////////////////////////////////////////////////////	 
@@ -205,7 +206,7 @@ void TIM2_Input_Capture_Update()
 #define USE_LED 0
 #define USE_REMOTE 1
 #define USE_IC_UPDATE 0
-#define USE_ADC_REF 1
+#define USE_ADC_REF 0
 void TIM3_IRQHandler(void)
 {
 #if USE_REMOTE
@@ -228,148 +229,50 @@ void TIM3_IRQHandler(void)
 #endif
 
 extern u16 TIM3_ONE_SECOND_COUNT;
-/**
- * @description: 用于数码管显示的更新
- * @return {*}
- */
-void TIM4_IRQHandler(void) //TIM4中断
+
+void TIM4_IRQHandler(void)
 {
-	static u8 key = 0; //按键值
 	static u8 t = 0;
 	static u8 press_change_period = 0;
 
-	// trick
-	// num3 = TIM2_SIG_HIGH_TIME / 1000; //高电平时间的秒位
-	// num2 = (TIM2_SIG_HIGH_TIME % 1000) / 100; //高电平时间的毫秒位
-	// num1 = (TIM2_SIG_HIGH_TIME % 100) / 10; //高电平时间的百分位
-	// num = (TIM2_SIG_HIGH_TIME % 10); //高电平时间的个位
-
-	if (TIM4->SR & 0X0001) //溢出中断
+	if (TIM4->SR & 0X0001)
 	{
-		//key = Remote_Scan();//获取红外遥控键值
-		//key = TIM2_SIG_HIGH_TIME; //获取输入捕获的高电平时间
+		u8 key = Remote_Scan();
 
 		if (key)
 		{
 			LED_SMG_Clear();
 			switch (key)
 			{
-				case 104:
-					LED_SMG_WriteNum(7, 1);
-					BEEP = 1;
-					break; //按键'1'
-
-				case 152:
-					LED_SMG_WriteNum(7, 2);
-					BEEP = 1;
-					break;     //按键'2'
-
-				case 176:
-					LED_SMG_WriteNum(7, 3);
-					BEEP = 0;
-					break;     //按键'3'
-
-				case 48:
-					LED_SMG_WriteNum(7, 4);
-					BEEP = 0;
-					break;      //按键'4'
-
-				case 24:
-					LED_SMG_WriteNum(7, 5);
-					BEEP = 0;
-					break;      //按键'5'
-
-				case 122:
-					LED_SMG_WriteNum(7, 6);
-					BEEP = 0;
-					break;     //按键'6'
-
-				case 16:
-					LED_SMG_WriteNum(7, 7);
-					BEEP = 0;
-					break;      //按键'7'
-
-				case 56:
-					LED_SMG_WriteNum(7, 8);
-					BEEP = 0;
-					break;      //按键'8'
-
-				case 90:
-					LED_SMG_WriteNum(7, 9);
-					BEEP = 0;
-					break;      //按键'9'
-
-				case 66:
-					LED_SMG_WriteNum(7, 0);
-					BEEP = 0;
-					break;      //按键'0'
-
-				case 82:
-					LED_SMG_WriteSeg(7, 0x00);
-					BEEP = 0;
-					break;     //按键'DELETE'
-
-				case 162:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 0);
-					BEEP = 0;
-					break;//按键'POWER'
-
-				case 98:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 1);
-					BEEP = 0;
-					break;//按键'UP'
-
-				case 226:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 2);
-					BEEP = 0;
-					break;//按键'ALIENTEK'
-
-				case 34:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 3);
-					BEEP = 0;
-					break;//按键'LEFT'
-
-				case 2:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 4);
-					BEEP = 0;
-					break;//按键'PLAY'
-
-				case 194:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 5);
-					BEEP = 0;
-					break;//按键'RIGHT'
-
-				case 224:
-					press_change_period = 2;
-					BEEP = 1;
-					break;//按键'VOL-'
-
-				case 168:
-					LED_SMG_WriteNum(6, 1);
-					LED_SMG_WriteNum(7, 7);
-					BEEP = 0;
-					break;//按键'DOWN'
-
-				case 144:
-					press_change_period = 1;
-					BEEP = 1;
-					break;//按键'VOL+'
+				case KEY_1:        LED_SMG_WriteNum(7, 1); BEEP = 1; break;
+				case KEY_2:        LED_SMG_WriteNum(7, 2); BEEP = 1; break;
+				case KEY_3:        LED_SMG_WriteNum(7, 3); BEEP = 0; break;
+				case KEY_4:        LED_SMG_WriteNum(7, 4); BEEP = 0; break;
+				case KEY_5:        LED_SMG_WriteNum(7, 5); BEEP = 0; break;
+				case KEY_6:        LED_SMG_WriteNum(7, 6); BEEP = 0; break;
+				case KEY_7:        LED_SMG_WriteNum(7, 7); BEEP = 0; break;
+				case KEY_8:        LED_SMG_WriteNum(7, 8); BEEP = 0; break;
+				case KEY_9:        LED_SMG_WriteNum(7, 9); BEEP = 0; break;
+				case KEY_0:        LED_SMG_WriteNum(7, 0); BEEP = 0; break;
+				case KEY_DELETE:   LED_SMG_WriteSeg(7, 0x00); BEEP = 0; break;
+				case KEY_POWER:    LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 0); BEEP = 0; break;
+				case KEY_UP:       LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 1); BEEP = 0; break;
+				case KEY_ALIENTEK: LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 2); BEEP = 0; break;
+				case KEY_LEFT:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 3); BEEP = 0; break;
+				case KEY_PLAY:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 4); BEEP = 0; break;
+				case KEY_RIGHT:    LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 5); BEEP = 0; break;
+				case KEY_VOL_SUB:  press_change_period = 2; BEEP = 1; break;
+				case KEY_DOWN:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 7); BEEP = 0; break;
+				case KEY_VOL_ADD:  press_change_period = 1; BEEP = 1; break;
 			}
 		}
 		else
 		{
 			BEEP = 1;
 		}
+
 		if (TIM3_ONE_SECOND_COUNT < 200) TIM3_ONE_SECOND_COUNT = 200;
 		else if (TIM3_ONE_SECOND_COUNT > 5000) TIM3_ONE_SECOND_COUNT = 5000;
-		// 注掉这行后, ADC 或其他模块就能完全控制 bits 4-7
-		// LED_SMG_WriteValue(TIM2_SIG_HIGH_TIME, 4, 4);
 
 		LED_SMG_Scan();
 
@@ -381,21 +284,15 @@ void TIM4_IRQHandler(void) //TIM4中断
 			LED7 = !LED7;
 			switch (press_change_period)
 			{
-				case 1:
-					TIM3_ONE_SECOND_COUNT += 200;
-					break;
-				case 2:
-					TIM3_ONE_SECOND_COUNT -= 200;
-					break;
-				default:
-					break;
+				case 1:  TIM3_ONE_SECOND_COUNT += 200; break;
+				case 2:  TIM3_ONE_SECOND_COUNT -= 200; break;
+				default: break;
 			}
 			press_change_period = 0;
 		}
 	}
 
-	TIM4->SR &= ~(1 << 0); //清除中断标志位
-
+	TIM4->SR &= ~(1 << 0);
 }
 
 
