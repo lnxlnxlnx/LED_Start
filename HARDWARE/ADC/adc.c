@@ -2,6 +2,7 @@
 #include "delay.h"
 #include "smg.h"
 #include "led.h"
+#include "timer.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK NANO STM32开发板
@@ -91,7 +92,7 @@ void adc_irq_func(void)
 
     adc_t++;
 
-    if (adc_t == 100)
+    if (adc_t >= TIMER_MS(&g_tim3, 200))
     {
         adc_t = 0;
         adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
@@ -112,11 +113,12 @@ void adc_irq_func(void)
 
     led_t++;
 
-    if (led_t == 250)
+    if (led_t >= TIMER_MS(&g_tim3, 500))
     {
         led_t = 0;
         LED0 = !LED0;
     }
+    LED_SMG_Scan();
 }
 
 

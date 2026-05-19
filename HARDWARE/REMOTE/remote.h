@@ -34,4 +34,5 @@ extern u8 RmtCnt;			//按键按下的次数
 
 void Remote_Init(void);    	//红外传感器接收头引脚初始化
 u8 Remote_Scan(void);	    
+void remote_smg_irq_func(void); // 遥控器按键处理函数(由定时器中断周期性调用)
 #endif

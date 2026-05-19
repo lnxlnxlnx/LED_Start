@@ -1,5 +1,6 @@
 #include "led.h"
 #include "delay.h"
+#include "timer.h"
 #include "project_log_config.h"
 #if !defined(LOG_TAG)
 #define LOG_TAG                    "LED"
@@ -95,10 +96,10 @@ void led_irq_func(void) {
         //NOTE:method 2: 1秒翻转LED
         // 假设 TIM3 是 1ms 中断一次，则下面为1000，如果是 10ms 中断一次，则下面为100，依此类推
         tim3_count++;
-        if (tim3_count * 10 >= TIM3_ONE_SECOND_COUNT)
+        if (tim3_count >= TIMER_MS(&g_tim3, TIM3_ONE_SECOND_COUNT))
         {
             tim3_count = 0;
-            LED0 = !LED0;   // 1秒翻转LED
+            LED6 = !LED6;   // 1秒翻转LED
         }
     }
 }

@@ -1,6 +1,9 @@
 #include "remote.h"
 #include "delay.h"
 #include "usart.h"
+#include "timer.h"
+#include "led.h"
+#include "beep.h"
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -38,6 +41,7 @@ void Remote_Init(void)
 	TIM3->CR1 |= 0x01;    	//使能定时器3
 	MY_NVIC_Init(1, 3, TIM3_IRQn, 2);//抢占1，子优先级3，组2		
 
+	TIMER_SetTim3Clock(10000 - 1, 72 - 1);	// 100hz，每10ms溢出一次
 }
 
 
@@ -153,4 +157,51 @@ u8 Remote_Scan(void)
 	return sta;
 }
 
+/**
+ * @description: 用于处理按键值的函数，定时器中断周期性调用这个函数来处理按键值，并且根据按键值来控制LED和蜂鸣器(上面的Remote_Scan函数只是获取按键值，这个函数才是根据按键值来显示smg的函数)
+ * @return {*}
+ */
+void remote_smg_irq_func(void) {
+	u8 key = Remote_Scan();
+	static u8 t = 0;
+
+	if (key)
+	{
+		LED_SMG_Clear();
+		switch (key)
+		{
+			case KEY_1:        LED_SMG_WriteNum(7, 1); BEEP = 1; break;
+			case KEY_2:        LED_SMG_WriteNum(7, 2); BEEP = 1; break;
+			case KEY_3:        LED_SMG_WriteNum(7, 3); BEEP = 0; break;
+			case KEY_4:        LED_SMG_WriteNum(7, 4); BEEP = 0; break;
+			case KEY_5:        LED_SMG_WriteNum(7, 5); BEEP = 0; break;
+			case KEY_6:        LED_SMG_WriteNum(7, 6); BEEP = 0; break;
+			case KEY_7:        LED_SMG_WriteNum(7, 7); BEEP = 0; break;
+			case KEY_8:        LED_SMG_WriteNum(7, 8); BEEP = 0; break;
+			case KEY_9:        LED_SMG_WriteNum(7, 9); BEEP = 0; break;
+			case KEY_0:        LED_SMG_WriteNum(7, 0); BEEP = 0; break;
+			case KEY_DELETE:   LED_SMG_WriteSeg(7, 0x00); BEEP = 0; break;
+			case KEY_POWER:    LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 0); BEEP = 0; break;
+			case KEY_UP:       LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 1); BEEP = 0; break;
+			case KEY_ALIENTEK: LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 2); BEEP = 0; break;
+			case KEY_LEFT:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 3); BEEP = 0; break;
+			case KEY_PLAY:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 4); BEEP = 0; break;
+			case KEY_RIGHT:    LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 5); BEEP = 0; break;
+			case KEY_VOL_SUB:  BEEP = 1; break;
+			case KEY_DOWN:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 7); BEEP = 0; break;
+			case KEY_VOL_ADD:  BEEP = 1; break;
+		}
+	}
+	else
+	{
+		BEEP = 1;
+	}
+
+	t++;
+	if (t >= TIMER_MS(&g_tim4, 250))
+	{
+		t = 0;
+		LED7 = !LED7;
+	}
+}
 
