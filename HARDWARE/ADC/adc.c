@@ -1,5 +1,7 @@
 #include "adc.h"
 #include "delay.h"
+#include "smg.h"
+#include "led.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK NANO STM32开发板
@@ -35,13 +37,14 @@ void  Adc_Init(void)
 	ADC1->CR2&=~(1<<1);    //单次转换模式
 	ADC1->CR2&=~(7<<17);	   
 	ADC1->CR2|=7<<17;	   //软件控制转换  
-	ADC1->CR2|=1<<20;      //使用用外部触发(SWSTART)!!!	必须使用一个事件来触发
+	ADC1->CR2|=1<<20;      //使用用外部触发(SWSTART)!!!	必须使用一个事件来触发->定时器每200ms触发一次ADC转换
 	ADC1->CR2&=~(1<<11);   //右对齐	 
 	ADC1->SQR1&=~(0XF<<20);
 	ADC1->SQR1|=0<<20;     //1个转换在规则序列中 也就是只转换规则序列1 			   
 	//设置通道9的采样时间
 	ADC1->SMPR2&=~(7<<3);  //通道9采样时间清空	  
- 	ADC1->SMPR2|=7<<3;     //通道9 239.5周期,提高采样时间可以提高精确度	 
+ 	ADC1->SMPR2|=7<<3;     //通道9 239.5周期,提高采样时间可以提高精确度	 ，还要加上转换时间(转换+对齐、锁存)12.5周期总共252周期，ADC时钟12M，转换时间为252/12M=21us左右
+
 	ADC1->CR2|=1<<0;	   //开启AD转换器	 
 	ADC1->CR2|=1<<3;       //使能复位校准  
 	while(ADC1->CR2&1<<3); //等待校准结束 			 
@@ -78,17 +81,43 @@ u16 Get_Adc_Average(u8 ch,u8 times)
 	return temp_val/times;
 } 	 
 
+void adc_irq_func(void)
+{
+    static u16 adcx = 0;
+    static u16 adcx1 = 0;
+    static float temp = 0;
+    static u8 adc_t = 0;
+    static u8 led_t = 0;
 
+    adc_t++;
 
+    if (adc_t == 100)
+    {
+        adc_t = 0;
+        adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
+        LED_SMG_WriteValue(adcx, 0, 4);
+        temp = (float)adcx * (3.3 / 4096);  // ADC电压值
+        adcx1 = temp;
+        // temp -= adcx1;
+        LED_SMG_WriteNumDP(4, (u16)temp);
+        temp *= 1000;
+        LED_SMG_WriteValue((u16)temp % 1000, 5, 3);
+        
 
+        // for (u8 i = 0; i < 8; i++)
+        // {
+        //     LED_SMG_WriteNum(i, i);
+        // }
+    }
 
+    led_t++;
 
-
-
-
-
-
-
+    if (led_t == 250)
+    {
+        led_t = 0;
+        LED0 = !LED0;
+    }
+}
 
 
 

@@ -125,7 +125,8 @@ u8  TIM2CH1_CAPTURE_STA = 0;	//输入捕获状态
 u16	TIM2CH1_CAPTURE_VAL;	//输入捕获值
 //定时器2中断服务程序	 
 /**
- * @description: ARR = 65535, PSC = 72-1, 以1MHz的频率计数,每计数一次是1us
+ * @description: TIM2_CH1（PA0）输入捕获配置
+ * ARR = 65535, PSC = 72-1, 以1MHz的频率计数,每计数一次是1us
  * 				当捕获到一个上升沿时，记录当前的计数值到TIM2CH1_CAPTURE_VAL中，并将捕获状态的第6位置1，表示已经捕获到高电平了
  * 				当捕获到一个下降沿时，记录当前的计数值到TIM2CH1_CAPTURE_VAL中，并将捕获状态的第7位置1，表示成功捕获到了一次高电平脉宽
  * 
@@ -173,6 +174,7 @@ void TIM2_IRQHandler(void)	// 定时器更新中断
 //定时器3中断服务程序	 
 extern void remote_irq_func(void);
 extern void led_irq_func(void);
+extern void adc_irq_func(void);
 /**
  * @description: 每10毫秒执行一次
  * @return {*}
@@ -200,9 +202,10 @@ void TIM2_Input_Capture_Update()
 		TIM2CH1_CAPTURE_STA = 0;			//开启下一次捕获
 	}
 }
-#define USE_LED 1
+#define USE_LED 0
 #define USE_REMOTE 1
-#define USE_IC_UPDATE 1
+#define USE_IC_UPDATE 0
+#define USE_ADC_REF 1
 void TIM3_IRQHandler(void)
 {
 #if USE_REMOTE
@@ -214,6 +217,9 @@ void TIM3_IRQHandler(void)
 #endif
 #if USE_IC_UPDATE
 	TIM2_Input_Capture_Update();
+#endif
+#if USE_ADC_REF
+	adc_irq_func();
 #endif
 	TIM3->SR = 0;//清除中断标志位   
 }
@@ -228,19 +234,8 @@ extern u16 TIM3_ONE_SECOND_COUNT;
  */
 void TIM4_IRQHandler(void) //TIM4中断
 {
-	// 共阴数字数组
-// 0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F, .，全灭
-	static u8 smg_num[] = { 0xfc, 0x60, 0xda, 0xf2, 0x66, 0xb6, 0xbe, 0xe0, 0xfe, 0xf6, 0xee, 0x3e, 0x9c, 0x7a, 0x9e, 0x8e, 0x01, 0x00 };
 	static u8 key = 0; //按键值
-	static u8 num = 0x00; //数值
-	static u8 num1 = 0x00; //数值
-	static u8 num2 = 0x00; //数值
-	static u8 num3 = 0x00; //数值
-	static u8 smg_wei = 6; //数码管位选
-	static u8 smg_duan = 0; //数码管段选
-	static u8 smg_flag = 0; //数码管显示标志 0:正常显示 1:不显示（消除鬼影）
 	static u8 t = 0;
-
 	static u8 press_change_period = 0;
 
 	// trick
@@ -256,130 +251,113 @@ void TIM4_IRQHandler(void) //TIM4中断
 
 		if (key)
 		{
+			LED_SMG_Clear();
 			switch (key)
 			{
 				case 104:
-					num1 = 0x00;
-					num = smg_num[1];
+					LED_SMG_WriteNum(7, 1);
 					BEEP = 1;
 					break; //按键'1'
 
 				case 152:
-					num1 = 0x00;
-					num = smg_num[2];
+					LED_SMG_WriteNum(7, 2);
 					BEEP = 1;
 					break;     //按键'2'
 
 				case 176:
-					num1 = 0x00;
-					num = smg_num[3];
+					LED_SMG_WriteNum(7, 3);
 					BEEP = 0;
 					break;     //按键'3'
 
 				case 48:
-					num1 = 0x00;
-					num = smg_num[4];
+					LED_SMG_WriteNum(7, 4);
 					BEEP = 0;
 					break;      //按键'4'
 
 				case 24:
-					num1 = 0x00;
-					num = smg_num[5];
+					LED_SMG_WriteNum(7, 5);
 					BEEP = 0;
 					break;      //按键'5'
 
 				case 122:
-					num1 = 0x00;
-					num = smg_num[6];
+					LED_SMG_WriteNum(7, 6);
 					BEEP = 0;
 					break;     //按键'6'
 
 				case 16:
-					num1 = 0x00;
-					num = smg_num[7];
+					LED_SMG_WriteNum(7, 7);
 					BEEP = 0;
 					break;      //按键'7'
 
 				case 56:
-					num1 = 0x00;
-					num = smg_num[8];
+					LED_SMG_WriteNum(7, 8);
 					BEEP = 0;
 					break;      //按键'8'
 
 				case 90:
-					num1 = 0x00;
-					num = smg_num[9];
+					LED_SMG_WriteNum(7, 9);
 					BEEP = 0;
 					break;      //按键'9'
 
 				case 66:
-					num1 = 0x00;
-					num = smg_num[0];
+					LED_SMG_WriteNum(7, 0);
 					BEEP = 0;
 					break;      //按键'0'
 
 				case 82:
-					num1 = 0x00;
-					num = smg_num[17];
+					LED_SMG_WriteSeg(7, 0x00);
 					BEEP = 0;
 					break;     //按键'DELETE'
 
 				case 162:
-					num1 = smg_num[1];
-					num = smg_num[0];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 0);
 					BEEP = 0;
 					break;//按键'POWER'
 
 				case 98:
-					num1 = smg_num[1];
-					num = smg_num[1];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 1);
 					BEEP = 0;
 					break;//按键'UP'
 
 				case 226:
-					num1 = smg_num[1];
-					num = smg_num[2];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 2);
 					BEEP = 0;
 					break;//按键'ALIENTEK'
 
 				case 34:
-					num1 = smg_num[1];
-					num = smg_num[3];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 3);
 					BEEP = 0;
 					break;//按键'LEFT'
 
 				case 2:
-					num1 = smg_num[1];
-					num = smg_num[4];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 4);
 					BEEP = 0;
 					break;//按键'PLAY'
 
 				case 194:
-					num1 = smg_num[1];
-					num = smg_num[5];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 5);
 					BEEP = 0;
 					break;//按键'RIGHT'
 
 				case 224:
-					//num1 = smg_num[1];
-					//num = smg_num[6];
-					//TIM3_ONE_SECOND_COUNT -= 200;
 					press_change_period = 2;
 					BEEP = 1;
 					break;//按键'VOL-'
 
 				case 168:
-					num1 = smg_num[1];
-					num = smg_num[7];
+					LED_SMG_WriteNum(6, 1);
+					LED_SMG_WriteNum(7, 7);
 					BEEP = 0;
 					break;//按键'DOWN'
 
 				case 144:
-					//num1 = smg_num[1];
-					//num = smg_num[8];
-					//TIM3_ONE_SECOND_COUNT += 200;
 					press_change_period = 1;
-					//if (TIM3_ONE_SECOND_COUNT > 2000) TIM3_ONE_SECOND_COUNT = 2000; //限制最大值
 					BEEP = 1;
 					break;//按键'VOL+'
 			}
@@ -390,68 +368,24 @@ void TIM4_IRQHandler(void) //TIM4中断
 		}
 		if (TIM3_ONE_SECOND_COUNT < 200) TIM3_ONE_SECOND_COUNT = 200;
 		else if (TIM3_ONE_SECOND_COUNT > 5000) TIM3_ONE_SECOND_COUNT = 5000;
-		//u16 temp = TIM3_ONE_SECOND_COUNT;
-		u16 temp = TIM2_SIG_HIGH_TIME;
-		num = smg_num[temp % 10];
-		temp = temp / 10;
-		num1 = smg_num[temp % 10];
-		temp = temp / 10;
-		num2 = smg_num[temp % 10];
-		temp = temp / 10;
-		num3 = smg_num[temp % 10];
+		// 注掉这行后, ADC 或其他模块就能完全控制 bits 4-7
+		// LED_SMG_WriteValue(TIM2_SIG_HIGH_TIME, 4, 4);
 
-
-		if (smg_wei == 6) //数码管位
-		{
-			smg_duan = num1;
-		}
-		else if (smg_wei == 7) //数码管位
-		{
-			smg_duan = num;
-		}
-		else if (smg_wei == 5) //数码管位
-		{
-			smg_duan = num2;
-		}
-		else if (smg_wei == 4) //数码管位
-		{
-			smg_duan = num3;
-		}
-
-		if (smg_flag) LED_Write_Data(0x00, smg_wei); //消除鬼影(段码不显示)
-		else 	  LED_Write_Data(smg_duan, smg_wei); //正常显示
-
-		LED_Refresh();//数码管数据更新
-		smg_flag = !smg_flag;
-
-		if (smg_flag == 0) //正常显示才更新位码
-		{
-			smg_wei++;
-
-			if (smg_wei == 8) smg_wei = 4;
-		}
+		LED_SMG_Scan();
 
 		t++;
 
-		if (t == 250) //LED1每500MS闪烁
+		if (t == 250)
 		{
 			t = 0;
 			LED7 = !LED7;
 			switch (press_change_period)
 			{
 				case 1:
-					//log_i("current num = %#03x", num);
 					TIM3_ONE_SECOND_COUNT += 200;
 					break;
 				case 2:
-					//log_i("current num = %#03x", num1);
 					TIM3_ONE_SECOND_COUNT -= 200;
-					break;
-				case 3:
-					log_i("current num = %#03x", num2);
-					break;
-				case 4:
-					log_i("current num = %#03x", num3);
 					break;
 				default:
 					break;

@@ -275,6 +275,12 @@ void remote_example(void)
         ul_timer_start(timer_remote_p);
 }
 
+/*** 
+ * @description: 用于定时器3周期性采样ADC值并显示在数码管上(200ms)
+ * PB1/TIM3_CH4/ADC_IN9连接一个电位器，调节电位器可以改变ADC值从而改变数码管显示的数值(注意跳线帽)
+ * @param {void} *parameter
+ * @return {*}
+ */
 static void time_adc_callback(void *parameter)
 {
     // ADC变量
