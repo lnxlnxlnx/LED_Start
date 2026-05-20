@@ -55,6 +55,8 @@ u8 	RmtSta = 0;
 u16 Dval;		//下降沿时计数器的值
 u32 RmtRec = 0;	//红外接收到的数据	   		    
 u8  RmtCnt = 0;	//按键按下的次数	  
+u8  key = 0;
+volatile u8 g_remote_key_flag;
 
 //
 /**
@@ -62,11 +64,11 @@ u8  RmtCnt = 0;	//按键按下的次数
  * @return {*}
  */
 void remote_irq_func(void) {
-	static u8 t = 0;
-	if (++t < TIMER_MS(&g_tim3, 10)) {
-		return;
-	}
-	t = 0;
+	// static u8 t = 0;
+	// if (++t < TIMER_MS(&g_tim3, 10)) {
+	// 	return;
+	// }
+	//t = 0;
 	u16 tsr;
 	tsr = TIM3->SR;
 
@@ -74,7 +76,7 @@ void remote_irq_func(void) {
 	{
 		if (RmtSta & 0x80)//上次有数据被接收到了
 		{
-			RmtSta &= ~0X10;						//取消上升沿已经被捕获标记
+
 			if ((RmtSta & 0X0F) == 0X00)RmtSta |= 1 << 6;//标记已经完成一次按键的键值信息采集
 			if ((RmtSta & 0X0F) < 14)RmtSta++;
 			else
@@ -129,6 +131,7 @@ void remote_irq_func(void) {
 			RmtSta &= ~(1 << 4);
 		}
 	}
+	key = Remote_Scan();
 	//TIM3->SR = 0;//清除中断标志位   
 }
 
@@ -168,7 +171,7 @@ u8 Remote_Scan(void)
  * @return {*}
  */
 void remote_smg_irq_func(void) {
-	u8 key = 0;
+	//u8 key = 0;
 	static u16 t = 0;
 	t++;
 	static u16 t_key = 0;
@@ -178,18 +181,18 @@ void remote_smg_irq_func(void) {
 	{
 		LED_SMG_WriteNum(i, i);
 	}
-	if (t_key < TIMER_MS(&g_tim4, 10))	// 10ms 扫描一次按键值，避免没有按键值时频繁调用Remote_Scan函数导致的卡死
+	if (t_key < TIMER_MS(&g_tim3, 10))	// 10ms 扫描一次按键值，避免没有按键值时频繁调用Remote_Scan函数导致的卡死
 	{
 		return;
 	}
 	t_key = 0;
-	key = Remote_Scan();
-	printf("Key: %d\r\n", key);
+	//key = Remote_Scan();
+	printf("Key: %d  flag: %d\r\n", g_remote_key, g_remote_key_flag);
 
-	if (key)
+	if (g_remote_key != 0)
 	{
 		LED_SMG_Clear();
-		switch (key)
+		switch (g_remote_key)
 		{
 			case KEY_1:        LED_SMG_WriteNum(7, 1); BEEP = 1; break;
 			case KEY_2:        LED_SMG_WriteNum(7, 2); BEEP = 1; break;
@@ -218,10 +221,122 @@ void remote_smg_irq_func(void) {
 		BEEP = 1;
 	}
 
-	if (t >= TIMER_MS(&g_tim4, 250))
+	if (t >= TIMER_MS(&g_tim3, 250))
 	{
 		t = 0;
 		LED7 = !LED7;
 	}
+}
+
+// 全局变量：中断中直接写入，主循环清零后消费
+volatile u8 g_remote_key = 0;
+volatile u8 g_remote_key_flag = 0;
+
+/**
+ * @description: 中断级组合函数,在 TIM3_IRQHandler 中无条件调用(替代 remote_irq_func)。
+ * 捕获→解码→存 g_remote_key 一气呵成，主循环只需读 g_remote_key 即可得到按键值。
+ * 与 remote_irq_func / Remote_Scan 共享 RmtSta / RmtRec 等全局状态。
+ * 新增 bit_cnt 位计数器：等 32 位收齐再标记完成，避免原 overflow 过早置位导致解码失败。
+ */
+void remote_decode_isr(void)
+{
+    u16 tsr = TIM3->SR;
+    static u8 bit_cnt = 0;
+    u8 t1, t2, sta;
+
+    /* 捕获处理 —— 放在溢出前面，避免溢出误清位 4 */
+    if (tsr & (1 << 3))
+    {
+        if (RDATA)  /* 上升沿：开始一段高电平 */
+        {
+            TIM3->CCER |= 1 << 9;
+            TIM3->CNT = 0;
+            RmtSta |= 0X10;
+			g_remote_key_flag = 1;
+        }
+        else  /* 下降沿：高电平结束，测量脉宽 */
+        {
+            Dval = TIM3->CCR3;
+            TIM3->CCER &= ~(1 << 9);
+			g_remote_key_flag = 2;
+
+            if (RmtSta & 0X10)
+            {
+                if (RmtSta & 0X80)  /* 已收到引导码 */
+                {
+                    if (Dval > 300 && Dval < 800)       /* 数据 0：560us */
+                    {
+                        RmtRec <<= 1;
+                        RmtRec |= 0;
+                        bit_cnt++;
+                    }
+                    else if (Dval > 1400 && Dval < 1800) /* 数据 1：1680us */
+                    {
+                        RmtRec <<= 1;
+                        RmtRec |= 1;
+                        bit_cnt++;
+                    }
+                    else if (Dval > 2200 && Dval < 2600) /* 重复码：2.5ms */
+                    {
+                        RmtCnt++;
+                        RmtSta &= 0XF0;
+                    }
+
+                    /* 32 位数据收齐，标记完成 */
+                    if (bit_cnt >= 32)
+                    {
+                        RmtSta |= 1 << 6;
+                        bit_cnt = 0;
+                    }
+                }
+                else if (Dval > 4200 && Dval < 4700)    /* 引导码：4.5ms */
+                {
+                    RmtSta |= 1 << 7;
+                    RmtCnt = 0;
+                    bit_cnt = 0;
+                }
+            }
+            RmtSta &= ~(1 << 4);
+        }
+    }
+
+    /* 溢出处理 —— 只负责超时复位，不再清 位4 */
+    if (tsr & 0X01)
+    {
+        if (RmtSta & 0x80)
+        {
+
+
+            if ((RmtSta & 0X0F) < 14)
+                RmtSta++;
+            else
+            {
+                RmtSta &= ~(1 << 7);
+                RmtSta &= 0XF0;
+                bit_cnt = 0;
+                RmtRec = 0;
+            }
+			g_remote_key_flag = 3;
+        }
+    }
+
+    /* 键值解码（同 Remote_Scan 逻辑） */
+    if (RmtSta & (1 << 6))
+    {
+        t1 = RmtRec >> 24;
+        t2 = (RmtRec >> 16) & 0xff;
+        if ((t1 == (u8)~t2) && t1 == REMOTE_ID)
+        {
+            t1 = RmtRec >> 8;
+            t2 = RmtRec;
+            if (t1 == (u8)~t2)
+                sta = t1;
+        }
+        if (sta)
+            g_remote_key = sta;
+
+        RmtSta &= ~(1 << 6);
+        RmtCnt = 0;
+    }
 }
 

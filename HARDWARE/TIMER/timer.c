@@ -202,35 +202,38 @@ extern void led_irq_func(void);
 extern void adc_irq_func(void);
 
 #define USE_LED      0
-#define USE_REMOTE   0
-#define USE_REMOTE_SMG_IRQ 0
+#define USE_REMOTE   1
+#define USE_REMOTE_SMG_IRQ 1
 #define USE_IC_UPDATE 0
-#define USE_ADC_REF  1
+#define USE_ADC_REF  0
 #define USE_SMG 1
 void TIM3_IRQHandler(void)
 {
     // 只在更新中断(定时器溢出)时加 tick，捕获中断不计
-    if (TIM3->SR & 0X01)
+    if (TIM3->SR & 0X01) {
         g_tim3.tick++;
+
 #if USE_SMG
-LED_SMG_Scan();
+        LED_SMG_Scan();
 #endif
 #if USE_REMOTE
     remote_irq_func();
+    //remote_decode_isr();
 #endif
 #if USE_REMOTE_SMG_IRQ	
-    remote_smg_irq_func();
+        remote_smg_irq_func();
 #endif
 #if USE_LED
-    led_irq_func();
+        led_irq_func();
 #endif
 #if USE_IC_UPDATE
-    TIM2_Input_Capture_Update();
+        TIM2_Input_Capture_Update();
 #endif
 #if USE_ADC_REF
-    adc_irq_func();
+        adc_irq_func();
 #endif
-    TIM3->SR = 0;
+        TIM3->SR = 0;
+    }
 }
 
 
