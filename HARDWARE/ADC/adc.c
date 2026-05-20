@@ -87,12 +87,12 @@ void adc_irq_func(void)
     static u16 adcx = 0;
     static u16 adcx1 = 0;
     static float temp = 0;
-    static u8 adc_t = 0;
-    static u8 led_t = 0;
+    static u16 adc_t = 0;
+    static u16 led_t = 0;
 
     adc_t++;
 
-    if (adc_t >= TIMER_MS(&g_tim3, 200))
+    if (adc_t >= TIMER_MS(&g_tim3, 1000))
     {
         adc_t = 0;
         adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
@@ -118,9 +118,10 @@ void adc_irq_func(void)
     if (led_t >= TIMER_MS(&g_tim3, 500))
     {
         led_t = 0;
-        LED7 = !LED7;
+        LED6 = !LED6;
     }
-    LED_SMG_Scan();
+
+
 }
 
 

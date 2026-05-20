@@ -29,7 +29,7 @@ void Remote_Init(void)
 	GPIOB->CRL |= 0X00000008;	//上拉输入     
 	GPIOB->ODR |= 1 << 0;		//PB0 上拉
 
-	TIM3->ARR = 10000 - 1;  		//设定计数器自动重装值 最大10ms溢出  
+	TIM3->ARR = 1000 - 1;  		//设定计数器自动重装值 最大10ms溢出  
 	TIM3->PSC = 72 - 1;  			//预分频器,1M的计数频率,1us加1.	
 	TIM3->CCMR2 |= 1 << 0;		//CC3S=01 	选择输入端 IC3映射到TI3上
 	TIM3->CCMR2 |= 3 << 4;  	//IC3F=0011 配置输入滤波器 8个定时器时钟周期滤波
@@ -38,7 +38,7 @@ void Remote_Init(void)
 	TIM3->CCER |= 1 << 8; 		//CC3E=1 	允许捕获计数器的值到捕获寄存器中
 	TIM3->DIER |= 1 << 3;   	//允许CC3IE捕获中断				
 	TIM3->DIER |= 1 << 0;   	//允许更新中断				
-	TIMER_SetTim3Clock(10000 - 1, 72 - 1);	// 100hz，每10ms溢出一次
+	TIMER_SetTim3Clock(1000 - 1, 72 - 1);	// 1000hz，每1ms溢出一次
 
 	TIM3->CR1 |= 0x01;    	//使能定时器3
 	MY_NVIC_Init(1, 3, TIM3_IRQn, 2);//抢占1，子优先级3，组2		
@@ -62,6 +62,11 @@ u8  RmtCnt = 0;	//按键按下的次数
  * @return {*}
  */
 void remote_irq_func(void) {
+	static u8 t = 0;
+	if (++t < TIMER_MS(&g_tim3, 10)) {
+		return;
+	}
+	t = 0;
 	u16 tsr;
 	tsr = TIM3->SR;
 
@@ -79,6 +84,7 @@ void remote_irq_func(void) {
 			}
 		}
 	}
+	//printf("enter remote_irq_func/r/n");
 	if (tsr & (1 << 3))//CC3IE中断
 	{
 		if (RDATA)//上升沿捕获
@@ -162,13 +168,23 @@ u8 Remote_Scan(void)
  * @return {*}
  */
 void remote_smg_irq_func(void) {
-	u8 key = Remote_Scan();
-	static u8 t = 0;
+	u8 key = 0;
+	static u16 t = 0;
 	t++;
-	if (t < TIMER_MS(&g_tim4, 10))	// 10ms 扫描一次按键值，避免没有按键值时频繁调用Remote_Scan函数导致的卡死
+	static u16 t_key = 0;
+	t_key++;
+
+	for (int i = 0; i < 8; i++)
+	{
+		LED_SMG_WriteNum(i, i);
+	}
+	if (t_key < TIMER_MS(&g_tim4, 10))	// 10ms 扫描一次按键值，避免没有按键值时频繁调用Remote_Scan函数导致的卡死
 	{
 		return;
 	}
+	t_key = 0;
+	key = Remote_Scan();
+	printf("Key: %d\r\n", key);
 
 	if (key)
 	{
@@ -201,6 +217,7 @@ void remote_smg_irq_func(void) {
 	{
 		BEEP = 1;
 	}
+
 	if (t >= TIMER_MS(&g_tim4, 250))
 	{
 		t = 0;

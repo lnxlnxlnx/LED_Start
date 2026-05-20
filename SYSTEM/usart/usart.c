@@ -152,7 +152,7 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 
 void USART_IRQ_Handler(void){
 	static u16 t = 0;
-	if (++t <= TIMER_MS(&g_tim4, 30)){
+	if (++t <= TIMER_MS(&g_tim4, 1000)){
 		return;
 	}
 	t = 0;
