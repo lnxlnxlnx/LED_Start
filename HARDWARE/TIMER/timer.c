@@ -231,7 +231,7 @@ extern u16 TIM3_ONE_SECOND_COUNT;
 
 // ── TIM4 ─────────────────────────────────────────────
 extern void remote_irq_func(void);
-#define USE_REMOTE_SMG_IRQ 1
+#define USE_REMOTE_SMG_IRQ 0
 void TIM4_IRQHandler(void)
 {
     if (TIM4->SR & 0X0001)

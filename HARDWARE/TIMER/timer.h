@@ -23,6 +23,7 @@ void TIMER_SetTim3Clock(u16 arr, u16 psc);
 
 // 初始化
 void TIM3_Init(u16 arr, u16 psc);
+void TIM4_Init(u16 arr, u16 psc);
 void TIM6_Init(u16 arr,u16 psc); //有1~8个定时器，TIM6是基本定时器，不能产生PWM波，只有更新事件，可以用来做系统滴答时钟
 void TIM7_Init(u16 arr,u16 psc); //有1~8个定时器，TIM7是基本定时器，不能产生PWM波，只有更新事件，可以用来做系统滴答时钟
 
