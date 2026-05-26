@@ -124,5 +124,6 @@ void LED_SMG_Clear(void);
  *          建议扫描周期: 每 2ms 扫描一位，完整一轮约 16ms (62.5Hz 刷新率)
  */
 void LED_SMG_Scan(void);
+void LED_SMG_AutoCycle(void);
 
 #endif

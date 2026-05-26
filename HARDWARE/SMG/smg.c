@@ -194,13 +194,9 @@ void LED_SMG_WriteValue(u32 value, u8 start_bit, u8 len)
  *            - 第 1 次: 送空白段码 + 位选 (消除上一帧残影)
  *            - 第 2 次: 送正常段码 + 位选 + 刷新锁存
  *          每次调用只处理一位，完整一轮需 2 * SMG_NUM 次调用
- * @note    建议每 2ms 调用一次, 完整刷新率 ≈ 1000/(2*8*2) ≈ 31Hz
  */
 void LED_SMG_Scan(void)
 {
-    // static u8 t = 0;
-    // if (++t < TIMER_MS(&g_tim4, 2)) return; // 每 2ms 执行一次扫描
-    // t = 0;
     u8 bit = g_smg.current_bit;
 
     if (g_smg.ghost_flag) {
@@ -221,4 +217,25 @@ void LED_SMG_Scan(void)
         if (g_smg.current_bit >= SMG_NUM)
             g_smg.current_bit = 0;
     }
+}
+
+/**
+ * @brief   自动循环数字演示 (由 TIM4 中断周期性调用)
+ *          每 1 秒将 8 位数码管更新为下一个数字 (0~9 循环)
+ */
+void LED_SMG_AutoCycle(void)
+{
+    static u8 cur_num = 0;
+    static u32 last_tick = 0;
+
+    if (!TIMER_IsElapsed(&g_tim4, last_tick, 1000))
+        return;
+    last_tick = TIMER_GetTick(&g_tim4);
+
+    for (u8 i = 0; i < SMG_NUM; i++)
+        LED_SMG_WriteNum(i, cur_num);
+
+    cur_num++;
+    if (cur_num > 9)
+        cur_num = 0;
 }
