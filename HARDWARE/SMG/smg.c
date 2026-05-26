@@ -8,6 +8,7 @@
 #include "smg.h"
 #include "delay.h"
 #include "timer.h"
+#include "led.h"
 
 SMG_TypeDef g_smg;  // 全局数码管实例，供外部访问显示缓冲区
 
@@ -227,9 +228,13 @@ void LED_SMG_AutoCycle(void)
 {
     static u8 cur_num = 0;
     static u32 last_tick = 0;
-
+    if (TIMER_IsElapsed(&g_tim4, last_tick, 500)){
+        LED0 = !LED0;  // 每 500ms 切换 LED0 状态，辅助观察循环节奏
+    }
     if (!TIMER_IsElapsed(&g_tim4, last_tick, 1000))
         return;
+    // 到1000再切换一次
+    LED0 = !LED0;  // 每 1s 切换 LED0 状态，辅助观察循环节奏
     last_tick = TIMER_GetTick(&g_tim4);
 
     for (u8 i = 0; i < SMG_NUM; i++)
