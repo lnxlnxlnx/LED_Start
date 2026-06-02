@@ -63,18 +63,20 @@ static void LED_Wei(u8 num)
 void LED_Write_Data(u8 duan, u8 wei)
 {
     u8 i;
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++) {           // 操作74HC595的8个段选引脚
         LED_DS = (duan >> i) & 0x01;    // 段码最低位先送 (LSB first)
         LED_SCK = 0;                    // 移位时钟上升沿移入数据
         delay_us(5);
         LED_SCK = 1;
     }
-    LED_Wei(wei);                       // 位选切换
+    LED_Wei(wei);                       // 位选切换，改变138译码器
 }
 
 /**
  * @brief   刷新锁存: 将 74HC595 移位寄存器数据锁存到输出引脚
  *          产生 LCLK 正脉冲完成锁存
+ * 
+ * 串行位 → 移位时钟逐位移入寄存器 → 锁存时钟统一刷新到并行引脚输出
  */
 void LED_Refresh(void)
 {
@@ -229,12 +231,12 @@ void LED_SMG_AutoCycle(void)
     static u8 cur_num = 0;
     static u32 last_tick = 0;
     if (TIMER_IsElapsed(&g_tim4, last_tick, 500)){
-        LED0 = !LED0;  // 每 500ms 切换 LED0 状态，辅助观察循环节奏
+        LED0 = !LED0;  // 每 500ms 切换 LED0 状态
     }
     if (!TIMER_IsElapsed(&g_tim4, last_tick, 1000))
         return;
     // 到1000再切换一次
-    LED0 = !LED0;  // 每 1s 切换 LED0 状态，辅助观察循环节奏
+    LED0 = !LED0;  // 每 1s 切换 LED0 状态
     last_tick = TIMER_GetTick(&g_tim4);
 
     for (u8 i = 0; i < SMG_NUM; i++)

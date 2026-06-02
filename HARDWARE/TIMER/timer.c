@@ -12,8 +12,8 @@
 #include "remote.h"
 #include <stdint.h>
 
-TIMER_TypeDef g_tim3 = {0};
-TIMER_TypeDef g_tim4 = {0};
+TIMER_TypeDef g_tim3 = { 0 };
+TIMER_TypeDef g_tim4 = { 0 };
 
 static u32 calc_tick_us(u16 arr, u16 psc)
 {
@@ -98,12 +98,12 @@ void TIMER_SetTim3Clock(u16 arr, u16 psc)
     g_tim3.tick = 0;
 }
 
-u32 TIMER_GetTick(TIMER_TypeDef *pt)
+u32 TIMER_GetTick(TIMER_TypeDef* pt)
 {
     return pt->tick;
 }
 
-u8 TIMER_IsElapsed(TIMER_TypeDef *pt, u32 last, u32 interval)
+u8 TIMER_IsElapsed(TIMER_TypeDef* pt, u32 last, u32 interval)
 {
     return (TIMER_GetTick(pt) - last) >= interval;
 }
@@ -180,39 +180,38 @@ extern void adc_irq_func(void);
 #define USE_LED      0
 #define USE_REMOTE   0
 #define USE_IC_UPDATE 0
-#define USE_ADC_REF  0
+#define USE_ADC_REF  1
 
 void TIM3_IRQHandler(void)
 {
-    if (TIM3->SR & 0X01)
+    if (TIM3->SR & 0X01) {
         g_tim3.tick++;
 
 #if USE_REMOTE
-    remote_irq_func();
+        remote_irq_func();
 #endif
 #if USE_LED
-    led_irq_func();
+        led_irq_func();
 #endif
 #if USE_IC_UPDATE
-    TIM2_Input_Capture_Update();
+        TIM2_Input_Capture_Update();
 #endif
 #if USE_ADC_REF
-    adc_irq_func();
+        adc_irq_func();
 #endif
+    }
     TIM3->SR = 0;
 }
 
 extern u16 TIM3_ONE_SECOND_COUNT;
 
 // ── TIM4 ─────────────────────────────────────────────
-
+extern void adc_irq_func(void);
 void TIM4_IRQHandler(void)
 {
     if (TIM4->SR & 0X0001)
     {
         g_tim4.tick++;
-        LED_SMG_Scan();
-        LED_SMG_AutoCycle();
     }
     TIM4->SR &= ~(1 << 0);
 }
