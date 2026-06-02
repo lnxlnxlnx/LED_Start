@@ -87,8 +87,8 @@ void adc_irq_func(void)
     static u16 adcx = 0;
     static u16 adcx1 = 0;
     static float temp = 0;
-    static u8 adc_t = 0;
-    static u8 led_t = 0;
+    static u16 adc_t = 0;
+    static u16 led_t = 0;
 
     adc_t++;
 
