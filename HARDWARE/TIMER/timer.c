@@ -28,6 +28,8 @@ void TIM3_Init(u16 arr, u16 psc)
     TIM3->DIER |= 1 << 0;      // 允许更新中断
     TIM3->CR1 |= 0x01;         // 使能定时器
     MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+
+    TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
 }
 
 void TIM4_Init(u16 arr, u16 psc)

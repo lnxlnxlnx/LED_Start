@@ -24,11 +24,12 @@ int main(void)
     LED_Init();
     NVIC_Configuration();        // 中断分组 2
     uart_init(115200);           // 串口 115200bps
+    LED_SMG_Init();
+    Adc_Init();                  // 初始化 ADC，定时器触发转换
 
     TIM4_Init(9, 7199);          // TIM4 1ms 中断，驱动数码管扫描 + 自动轮播
     TIM3_Init(9, 7199);          // TIM3 1ms 中断，驱动数码管扫描 + 自动轮播
-    LED_SMG_Init();
-    Adc_Init();                  // 初始化 ADC，定时器触发转换
+
 
     while (1);                   // 所有逻辑都在 TIM4 中断中完成
 }
