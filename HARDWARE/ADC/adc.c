@@ -3,6 +3,7 @@
 #include "smg.h"
 #include "led.h"
 #include "timer.h"
+#include <stddef.h>   // 定义 NULL
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK NANO STM32开发板
@@ -82,8 +83,16 @@ u16 Get_Adc_Average(u8 ch,u8 times)
 	return temp_val/times;
 } 	 
 
-void adc_irq_func(void)
+void adc_irq_func(TIMER_TypeDef* callback_timer)
 {
+	static TIMER_TypeDef*pt = NULL;
+	if (callback_timer != NULL)
+	{
+		pt = callback_timer;
+	}else
+	{
+		pt = &g_tim3;  // 默认使用 g_tim3 作为时间基准
+	}
     static u16 adcx = 0;
     static u16 adcx1 = 0;
     static float temp = 0;
@@ -92,7 +101,7 @@ void adc_irq_func(void)
 
     adc_t++;
 
-    if (adc_t >= TIMER_MS(&g_tim3, 200))
+    if (adc_t >= TIMER_MS(pt, 200))
     {
         adc_t = 0;
         adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
@@ -105,17 +114,11 @@ void adc_irq_func(void)
         temp *= 1000;
         //LED_SMG_WriteValue((u16)temp % 1000, 5, 3); // 显示小数点后3位，但是这个函数会自动消除前导零，所以如果小数点后有0就显示不出来了
         LED_SMG_WriteValue_contain_zero((u16)temp % 1000, 5, 3);
-        
-
-        // for (u8 i = 0; i < 8; i++)
-        // {
-        //     LED_SMG_WriteNum(i, i);
-        // }
     }
 
     led_t++;
 
-    if (led_t >= TIMER_MS(&g_tim3, 500))
+    if (led_t >= TIMER_MS(pt, 500))
     {
         led_t = 0;
         LED7 = !LED7;

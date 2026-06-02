@@ -177,7 +177,7 @@ void TIM2_Input_Capture_Update(void)
 
 extern void remote_irq_func(void);
 extern void led_irq_func(void);
-extern void adc_irq_func(void);
+extern void adc_irq_func(TIMER_TypeDef* callback_timer);
 
 #define USE_LED      0
 #define USE_REMOTE   0
@@ -199,7 +199,7 @@ void TIM3_IRQHandler(void)
         TIM2_Input_Capture_Update();
 #endif
 #if USE_ADC_REF
-        adc_irq_func();
+        adc_irq_func(NULL);  // 使用默认的 g_tim3 作为时间基准
 #endif
     }
     TIM3->SR = 0;
@@ -208,12 +208,12 @@ void TIM3_IRQHandler(void)
 extern u16 TIM3_ONE_SECOND_COUNT;
 
 // ── TIM4 ─────────────────────────────────────────────
-extern void adc_irq_func(void);
 void TIM4_IRQHandler(void)
 {
     if (TIM4->SR & 0X0001)
     {
         g_tim4.tick++;
+        //adc_irq_func(&g_tim4);
     }
     TIM4->SR &= ~(1 << 0);
 }
