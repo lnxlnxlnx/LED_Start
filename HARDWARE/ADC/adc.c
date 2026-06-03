@@ -32,7 +32,14 @@ void  Adc_Init(void)
 	RCC->CFGR&=~(3<<14);   //分频因子清零	
 	//SYSCLK/DIV2=12M ADC时钟设置为12M,ADC最大时钟不能超过14M!
 	//否则将导致ADC准确度下降! 
-	RCC->CFGR|=2<<14;      	 
+	RCC->CFGR|=2<<14;      	 	
+	/*
+	二进制     分频
+	00     →   2
+	01     →   4
+	10     →   6
+	11     →   8
+	*/
 	ADC1->CR1&=0XF0FFFF;   //工作模式清零
 	ADC1->CR1|=0<<16;      //独立工作模式  
 	ADC1->CR1&=~(1<<8);    //非扫描模式	  
@@ -58,7 +65,8 @@ void  Adc_Init(void)
 }				  
 //获得ADC值
 //ch:通道值0~13
-//返回值：转换结果
+//返回值：转换结果	// ADC 轮询模式，调用该函数会阻塞直到转换完成，适合单次或者简单数据采样，可以优化为 DMA 模式或者中断模式以实现更高效的数据采集
+//ADC1_2_IRQHandler可以重写这个
 u16 Get_Adc(u8 ch)   
 {
 	//设置转换序列	  		 
@@ -72,7 +80,7 @@ u16 Get_Adc(u8 ch)
 //ch:通道值0~13
 //times:次数
 //返回值：通道ch的times次转换结果平均值
-u16 Get_Adc_Average(u8 ch,u8 times)
+u16 Get_Adc_Average(u8 ch,u8 times)		//每调用一次Get_Adc差不多25us，times=3差不多75us，times=10差不多250us
 {
 	u32 temp_val=0;
 	u8 t;
@@ -93,9 +101,9 @@ void adc_irq_func(TIMER_TypeDef* callback_timer)
 	{
 		pt = &g_tim3;  // 默认使用 g_tim3 作为时间基准
 	}
-    static u16 adcx = 0;
-    static u16 adcx1 = 0;
-    static float temp = 0;
+    static u16 adcx = 0;	// ADC原始值
+    static u16 adcx1 = 0;	// ADC转为电压值后的整数部分
+    static float voltage = 0;
     static u16 adc_t = 0;
     static u16 led_t = 0;
 
@@ -107,13 +115,13 @@ void adc_irq_func(TIMER_TypeDef* callback_timer)
         adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
         //printf("ADC Value: %hu\r\n", adcx);
         LED_SMG_WriteValue(adcx, 0, 4);
-        temp = (float)adcx * (3.3 / 4096);  // ADC电压值
-        adcx1 = temp;
-        // temp -= adcx1;
-        LED_SMG_WriteNumDP(4, (u16)temp);
-        temp *= 1000;
-        //LED_SMG_WriteValue((u16)temp % 1000, 5, 3); // 显示小数点后3位，但是这个函数会自动消除前导零，所以如果小数点后有0就显示不出来了
-        LED_SMG_WriteValue_contain_zero((u16)temp % 1000, 5, 3);
+        voltage = (float)adcx * (3.3 / 4096);  // ADC电压值
+        adcx1 = voltage;
+        // voltage -= adcx1;
+        LED_SMG_WriteNumDP(4, (u16)adcx1); // 显示小数点前的整数部分
+        voltage *= 1000;
+        //LED_SMG_WriteValue((u16)voltage % 1000, 5, 3); // 显示小数点后3位，但是这个函数会自动消除前导零，所以如果小数点后有0就显示不出来了
+        LED_SMG_WriteValue_contain_zero((u16)voltage % 1000, 5, 3);
     }
 
     led_t++;
