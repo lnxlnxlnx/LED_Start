@@ -1,30 +1,29 @@
-/**
- * @file    main.c
- * @brief   主程序
- *          每 1 秒在 8 位数码管上循环显示 0~9
- */
-
-#include "sys.h"
-#include "delay.h"
-#include "usart.h"
 #include "led.h"
-#include "key_led_one.h"
-#include "project_log_config.h"
-#include "rtc.h"
-#include "dac.h"
-#include "timer.h"
-#include "remote.h"
-#include "smg.h"
-#include "pwm.h"
-#include "adc.h"
+#include "delay.h"
+#include "sys.h"
+#include "usart.h"
+#include "key.h"
 #include "dma.h"
 
-const u8 TEXT_ARR[] = {"实验12 直接存储访问（DMA）实验\r\n"};
-#define TEXT_LENTH  sizeof(TEXT_ARR)-1			//TEXT_ARR字符串长度(不包含结束符)
-u8 SendBuff[(TEXT_LENTH) * 100];
+/************************************************
+ ALIENTEK NANO STM32开发板实验17
+ DMA实验
+ 技术支持：www.openedv.com
+ 淘宝店铺：http://eboard.taobao.com
+ 关注微信公众平台微信号："正点原子"，免费获取STM32资料。
+ 广州市星翼电子科技有限公司
+ 作者：正点原子 @ALIENTEK
+************************************************/
+
+const u8 TEXT_TO_SEND[] = {"ALIENTEK NANO STM32 DMA 串口实验"};
+#define TEXT_LENTH  sizeof(TEXT_TO_SEND)-1			//TEXT_TO_SEND字符串长度(不包含结束符)
+u8 SendBuff[(TEXT_LENTH + 2) * 100];
 
 int main(void)
 {
+    u16 i;
+    u8 t = 0;
+
     Stm32_Clock_Init(9);    //系统时钟设置
     uart_init(115200);  //串口初始化
     LED_Init();		  		//初始化与LED连接的硬件接口
@@ -35,22 +34,24 @@ int main(void)
     printf("KEY0:Start\r\n");
 
     //显示提示信息
-    u8 t = 0;
-    for (int i = 0; i < (TEXT_LENTH) * 100; i++) //填充ASCII字符集数据
+    for (i = 0; i < (TEXT_LENTH + 2) * 100; i++) //填充ASCII字符集数据
     {
-        SendBuff[i] = TEXT_ARR[t++]; //复制TEXT_ARR语句
         if (t >= TEXT_LENTH) //加入换行符
         {
+            SendBuff[i++] = 0x0d;
+            SendBuff[i] = 0x0a;
             t = 0;
         }
+        else SendBuff[i] = TEXT_TO_SEND[t++]; //复制TEXT_TO_SEND语句
     }
-    u8 i = 0;
-    u8 current_key = 0;
+
+    i = 0;
+
     while (1)
     {
-        current_key = KEY_Scan(0);
+        t = KEY_Scan(0);
 
-        if (current_key == KEY0_PRES) //KEY0按下
+        if (t == KEY0_PRES) //KEY0按下
         {
             printf("\r\nDMA DATA:\r\n ");
             USART1->CR3 = 1 << 7;       //使能串口1的DMA发送
@@ -67,7 +68,7 @@ int main(void)
                 }
 
                 LED2 = !LED2;
-                delay_ms(100);
+                delay_ms(50);
             }
 
             LED2 = 1;
@@ -85,3 +86,7 @@ int main(void)
     }
 
 }
+
+
+
+
