@@ -18,8 +18,10 @@
 #include "pwm.h"
 #include "adc.h"
 #include "dma.h"
+#include "stm32f10x_usart.h"
+#include "stm32f10x_dma.h"
 
-const u8 TEXT_ARR[] = {"实验12 直接存储访问（DMA）实验\r\n"};
+const u8 TEXT_ARR[] = { "实验12 直接存储访问（DMA）实验\r\n" }; //sizeof(u8) = 1，所以 sizeof(TEXT_ARR) 就是字符串长度（包含结束符），因此需要减去 1 来得到不包含结束符的长度
 #define TEXT_LENTH  sizeof(TEXT_ARR)-1			//TEXT_ARR字符串长度(不包含结束符)
 u8 SendBuff[(TEXT_LENTH) * 100];
 
@@ -50,28 +52,36 @@ int main(void)
     {
         current_key = KEY_Scan(0);
 
-        if (current_key == KEY0_PRES) //KEY0按下
+        if (current_key == KEY0_PRES)  // KEY0 按下
         {
             printf("\r\nDMA DATA:\r\n ");
-            USART1->CR3 = 1 << 7;       //使能串口1的DMA发送
-            MYDMA_Enable(DMA1_Channel4);//开始一次DMA传输！
 
-            //等待DMA传输完成，此时我们来做另外一些事，点灯
-            //实际应用中，传输数据期间，可以执行另外的任务
+            // 1. 使能串口1 DMA发送（寄存器写法 USART1->CR3 |= 1<<7; 的标准库）
+            USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+
+            DMA_SetCurrDataCounter(DMA1_Channel4, sizeof(SendBuff)); // 设置 DMA 传输数据量
+
+            // 2. 使能DMA通道，开始一次传输（MYDMA_Enable(DMA1_Channel4)）
+            DMA_Cmd(DMA1_Channel4, ENABLE);
+
+            // 等待DMA传输完成，同时LED2闪烁
             while (1)
             {
-                if (DMA1->ISR & (1 << 13)) //等待通道4传输完成
+                // 判断 DMA1 通道4 传输完成标志
+                if (DMA_GetFlagStatus(DMA1_FLAG_TC4))
                 {
-                    DMA1->IFCR |= 1 << 13; //清除通道4传输完成标志
+                    DMA_ClearFlag(DMA1_FLAG_TC4); // 清除标志
                     break;
                 }
 
-                LED2 = !LED2;
-                delay_ms(100);
+                LED7 = !LED7;
+                delay_ms(50);
             }
 
-            LED2 = 1;
-            printf("Transimit Finished!\r\n");//提示传送完成
+            LED7 = 1;
+            printf("Transimit Finished!\r\n");
+            // 2. 传输完成后关闭DMA
+            DMA_Cmd(DMA1_Channel4, DISABLE);
         }
 
         i++;
@@ -79,9 +89,8 @@ int main(void)
 
         if (i == 20)
         {
-            LED0 = !LED0; //提示系统正在运行
+            LED0 = !LED0;
             i = 0;
         }
     }
-
 }
