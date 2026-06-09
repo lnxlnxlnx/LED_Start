@@ -31,7 +31,8 @@ int main(void)
     uart_init(115200);  //串口初始化
     LED_Init();		  		//初始化与LED连接的硬件接口
     KEY_Init();				//按键初始化
-    MYDMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH + 2) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
+    //MYDMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH)*100.
+    dma_init((u32)SendBuff, (TEXT_LENTH) * 100);
     printf("NANO STM32\r\n");
     printf("DMA TEST\r\n");
     printf("KEY0:Start\r\n");

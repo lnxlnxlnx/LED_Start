@@ -16,6 +16,9 @@
 							    					    
 void MYDMA_Config(DMA_Channel_TypeDef*DMA_CHx,u32 cpar,u32 cmar,u16 cndtr);//配置DMA1_CHx
 void MYDMA_Enable(DMA_Channel_TypeDef*DMA_CHx);//使能DMA1_CHx
+
+
+void dma_init(u32 cmar, u16 cndtr);//DMA初始化函数，参数为要传输的变量的指针和传输内容的大小
 		   
 #endif
 
