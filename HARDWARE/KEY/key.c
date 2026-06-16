@@ -21,21 +21,45 @@ void KEY_Init(void)
 	RCC->APB2ENR|=1<<2;     //使能PORTA时钟
 	RCC->APB2ENR|=1<<4;     //使能PORTC时钟
 	RCC->APB2ENR|=1<<5;     //使能PORTD时钟
-	GPIOA->CRL&=0XFFFFFFF0;	//PA0设置成输入	  
+
+	GPIOA->CRL&=0XFFFFFFF0;	//PA0设置成输入	 下拉 
 	GPIOA->CRL|=0X00000008;
 	
 	GPIOC->CRH&=0XFFFFFF00;	//PC8、9设置成输入	  
 	GPIOC->CRH|=0X00000088; 			 
-	GPIOC->ODR|=1<<8;	   	//PC8上拉,PC8默认下拉
-	GPIOC->ODR|=1<<9;	   	//PC9上拉,PC9默认下拉
+	GPIOC->ODR|=1<<8;	   	//PC8上拉
+	GPIOC->ODR|=1<<9;	   	//PC9上拉
 	
 	
 	GPIOD->CRL&=0XFFFFF0FF;	//PD2设置成输入	  
 	GPIOD->CRL|=0X00000800;   
-	GPIOD->ODR|=1<<2;	   	//PD2上拉 
-	
-		
+	GPIOD->ODR|=1<<2;	   	//PD2上拉 		
 } 
+
+void My_KEY_Init(void)
+{
+	//KEY_Init();
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD, ENABLE); // 使能 GPIOA、GPIOC 和 GPIOD 时钟
+
+	GPIO_InitTypeDef GPIO_InitStructure;
+	// 配置 PA0 为输入，带上拉
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; // 输入，带下拉
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	// 配置 PC8 和 PC9 为输入，带上拉
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // 输入，带上拉
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	// 配置 PD2 为输入，带上拉
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // 输入，带上拉
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOD, &GPIO_InitStructure);
+}
 //按键处理函数
 //返回按键值
 //mode:0,不支持连续按;1,支持连续按;

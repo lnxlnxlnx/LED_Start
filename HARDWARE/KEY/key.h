@@ -24,6 +24,9 @@
 #define KEY2_PRES	3	//KEY2
 #define WKUP_PRES	4	//WK_UP  
 
+#define USE_LONGPRESS	1	//支持长按
+
 void KEY_Init(void);   //IO初始化
+void My_KEY_Init(void);
 u8 KEY_Scan(u8 mode);  //按键扫描函数					    
 #endif

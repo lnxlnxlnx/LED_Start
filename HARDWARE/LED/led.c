@@ -88,13 +88,6 @@ void led_irq_func(void) {
     // 标准库判断更新中断
     if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
     {
-        // 清除中断标志
-        //TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-
-        // //NOTE:method 1: 直接翻转LED
-        // LED0 = !LED0;   // 1秒翻转LED
-        // return;
-
         //NOTE:method 2: 1秒翻转LED
         // 假设 TIM3 是 1ms 中断一次，则下面为1000，如果是 10ms 中断一次，则下面为100，依此类推
         tim3_count++;
