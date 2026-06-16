@@ -6,6 +6,7 @@
 #ifndef __TIMER_H
 #define __TIMER_H
 #include "sys.h"
+#include <stm32f10x_tim.h>
 
 typedef struct {
     u16 arr;             // 自动重装值
@@ -24,6 +25,7 @@ u8   TIMER_IsElapsed(TIMER_TypeDef *pt, u32 last, u32 interval);
 void TIMER_SetTim3Clock(u16 arr, u16 psc);
 
 void TIM3_Init(u16 arr, u16 psc);
+void My_TIM3_Init(u16 arr, u16 psc);
 void TIM4_Init(u16 arr, u16 psc);
 void TIM6_Init(u16 arr, u16 psc);
 void TIM7_Init(u16 arr, u16 psc);

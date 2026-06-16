@@ -32,6 +32,32 @@ void TIM3_Init(u16 arr, u16 psc)
     TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
 }
 
+void My_TIM3_Init(u16 arr, u16 psc)
+{
+    // TIM3_Init(TIM3_ONE_SECOND_COUNT, 72 - 1);
+    // 1. 配置时基结构体
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); // 开启TIM3时钟
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; // 只给滤波、死区用，不影响定时器计数器计数速度。
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseStructure.TIM_Period = arr;
+    TIM_TimeBaseStructure.TIM_Prescaler = psc;
+    TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+    TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+
+    //2. 配置中断
+    TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
+
+    //3. 配置NVIC--中断管理
+    MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+
+    //4. 启动定时器
+    TIM_Cmd(TIM3, ENABLE);
+
+    //5. 初始化 g_tim3 时间基准参数
+    TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
+}
+
 void TIM4_Init(u16 arr, u16 psc)
 {
     RCC->APB1ENR |= 1 << 2;    // TIM4 时钟使能
@@ -179,10 +205,10 @@ extern void remote_irq_func(void);
 extern void led_irq_func(void);
 extern void adc_irq_func(TIMER_TypeDef* callback_timer);
 
-#define USE_LED      0
+#define USE_LED      1
 #define USE_REMOTE   0
 #define USE_IC_UPDATE 0
-#define USE_ADC_REF  1
+#define USE_ADC_REF  0
 
 void TIM3_IRQHandler(void)
 {
