@@ -77,9 +77,10 @@ void TIM3_PWM_Init_2(u16 arr, u16 psc)
     TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
 
     // 5. PWM模式配置 CH1
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1; // PWM 模式 1，当 CNT < CCRx 时输出有效电平，否则输出无效电平
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low; // 由于LED是共阳的，所以设置为低电平有效
+    TIM_OCInitStructure.TIM_Pulse = 0; // 初始占空比为0%，但是没什么用，因为我们后面会通过 SetCompare 函数来设置占空比 
     TIM_OC1Init(TIM3, &TIM_OCInitStructure);
 
     // CH2 同配置

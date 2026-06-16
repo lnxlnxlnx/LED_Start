@@ -259,8 +259,8 @@ extern void adc_irq_func(TIMER_TypeDef* callback_timer);
 extern void led_pwm_func(void);
 
 #define USE_LED      1
-#define USE_PWM_TEST   1
-#define USE_IC_UPDATE 0
+#define USE_PWM_TEST   0
+#define USE_IC_UPDATE 1
 #define USE_ADC_REF  0
 #define USE_REMOTE   0
 
@@ -276,10 +276,10 @@ void TIM3_IRQHandler(void)
         led_irq_func();
 #endif
 #if USE_PWM_TEST
-        led_pwm_func();
+        led_pwm_func();     // 需调用pwm.h下的初始化函数来配置TIM3为PWM模式，才能使用这个函数来实现LED的PWM调光功能
 #endif
 #if USE_IC_UPDATE
-        TIM2_Input_Capture_Update();
+        TIM2_Input_Capture_Update();        // 需调用TIM2_Cap_Init()来初始化TIM2，才能使用这个函数
 #endif
 #if USE_ADC_REF
         adc_irq_func(NULL);  // 使用默认的 g_tim3 作为时间基准
