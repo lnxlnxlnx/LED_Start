@@ -14,7 +14,7 @@
 //All rights reserved									  
 //////////////////////////////////////////////////////////////////////////////////    	 
 
-#define KEY0   PCin(8)   	
+#define KEY0   PCin(8)   	// 也可用于外部中断使用，比用下面的KEY_Scan更高效(那个是轮询方式)，但需要注意外部中断的触发方式和去抖动处理
 #define KEY1   PCin(9)
 #define KEY2   PDin(2)	 
 #define WK_UP  PAin(0)	 

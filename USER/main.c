@@ -31,6 +31,7 @@ int main(void)
     uart_init(115200);  //串口初始化
     LED_Init();		  		//初始化与LED连接的硬件接口
     My_KEY_Init();				//按键初始化
+    EXTIX_Init();                //外部中断初始化
     //MYDMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH)*100.
     dma_init((u32)SendBuff, (TEXT_LENTH) * 100);
     printf("NANO STM32\r\n");
@@ -51,24 +52,6 @@ int main(void)
     u8 current_key = 0;
     while (1)
     {
-        current_key = KEY_Scan(USE_LONGPRESS);
-
-        switch (current_key)
-        {
-        case KEY0_PRES:
-            LED0 = !LED0; // 按下 KEY0 时点亮 LED0
-            break;
-        case KEY1_PRES:
-            LED1 = !LED1; // 按下 KEY1 时点亮 LED1
-            break;
-        case KEY2_PRES:
-            LED2 = !LED2; // 按下 KEY2 时点亮 LED2
-            break;
-        case WKUP_PRES:
-            LED3 = !LED3; // 按下 WK_UP 时点亮 LED3
-        default:
-            break;
-        }
         delay_ms(200);
     }
 }

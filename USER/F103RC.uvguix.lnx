@@ -3622,7 +3622,7 @@
       </Doc>
       <Doc>
         <Name>..\HARDWARE\EXTI\exti.c</Name>
-        <ColumnNumber>3</ColumnNumber>
+        <ColumnNumber>4</ColumnNumber>
         <TopLine>46</TopLine>
         <CurrentLine>63</CurrentLine>
         <Folding>1</Folding>

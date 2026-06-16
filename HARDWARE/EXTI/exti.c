@@ -25,6 +25,7 @@ void EXTIX_Init(void)
 {
  
     KEY_Init();//初始化按键对应io模式
+	// 这边可以用宏定义来替代数字和端口，增强代码可读性
     Ex_NVIC_Config(GPIO_C,8,FTIR); 		//下降沿触发
 	Ex_NVIC_Config(GPIO_C,9,FTIR);		//下降沿触发
 	Ex_NVIC_Config(GPIO_D,2,FTIR);		//下降沿触发
@@ -38,34 +39,38 @@ void EXTIX_Init(void)
 extern EVENT_TYPE curent_event;
 extern LED_BEEP_MACHINE led_beep_machine;
 //外部中断0服务程序
-void EXTI0_IRQHandler(void)
+void EXTI0_IRQHandler(void)	// WK_UP
 {
     delay_ms(10);    //消抖
 	//curent_event = kUP; // 设置当前事件为kUP
 	//if (curent_event == KNONE) {
-	if(led_beep_machine.mode == CIRCLE2) {
-    	curent_event = kUP;
-	}
+	// if(led_beep_machine.mode == CIRCLE2) {
+    // 	curent_event = kUP;
+	// }
+	LED3 = !LED3; // 按下 WK_UP 时点亮 LED3
 	EXTI->PR=1<<0;  //清除LINE0上的中断标志位
 }
 //外部中断2服务程序
-void EXTI2_IRQHandler(void)
+void EXTI2_IRQHandler(void)	// KEY2
 {
     delay_ms(10);    //消抖			 
-	curent_event = K2;
+	// curent_event = K2;
+	LED2 = !LED2; // 按下 KEY2 时点亮 LED2
     EXTI->PR=1<<2;     //清除LINE2上的中断标志位  
 }
 //外部中断5_9服务中断程序
- void EXTI9_5_IRQHandler(void)
+ void EXTI9_5_IRQHandler(void)	// KEY0-KEY1
 {		
 	delay_ms(10);   //消抖			 
 	if(KEY0==0)	    //KEY0按键
 	{
-		curent_event = K0;
+		// curent_event = K0;
+		LED0 = !LED0; // 按下 KEY0 时点亮 LED0
 	}
  	if(KEY1==0)	    //KEY1按键
 	{
-		curent_event = K1;
+		// curent_event = K1;
+		LED1 = !LED1; // 按下 KEY1 时点亮 LED1
 	}
 	EXTI->PR=1<<8;  //清除LINE8上的中断标志位  
 	EXTI->PR=1<<9;  //清除LINE9上的中断标志位  	
