@@ -63,6 +63,8 @@ LED_Operate led_funcs[] = {
     led0_operate, led1_operate, led2_operate, led3_operate,
     led4_operate, led5_operate, led6_operate, led7_operate
 };
+
+volatile unsigned long *led_states[] = {&LED0, &LED1, &LED2, &LED3, &LED4, &LED5, &LED6, &LED7}; // 初始化 LED 状态为全灭
 /* 测试用循环控制函数 */
 void led_loop_control(void)
 {

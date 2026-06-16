@@ -22,6 +22,8 @@
 #define LED6 PCout(6)	// PC6
 #define LED7 PCout(7)	// PC7
 
+#define LED(x) LED##x
+
 void LED_Init(void);//初始化
 
 /* LED操作函数封装 */
@@ -37,6 +39,7 @@ void led7_operate(uint8_t val);
 typedef void (*LED_Operate)(uint8_t val);
 
 extern LED_Operate led_funcs[];
+extern volatile unsigned long *led_states[]; // 用于存储 LED 状态的变量，每位对应一个 LED
 
 void led_loop_control(void);//测试用循环控制函数
 

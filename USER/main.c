@@ -53,45 +53,11 @@ int main(void)
     {
         current_key = KEY_Scan(0);
 
-        if (current_key == KEY0_PRES)  // KEY0 按下
-        {
-            printf("\r\nDMA DATA:\r\n ");
-
-            // 1. 使能串口1 DMA发送（寄存器写法 USART1->CR3 |= 1<<7; 的标准库）
-            USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
-
-            DMA_SetCurrDataCounter(DMA1_Channel4, sizeof(SendBuff)); // 设置 DMA 传输数据量
-
-            // 2. 使能DMA通道，开始一次传输（MYDMA_Enable(DMA1_Channel4)）
-            DMA_Cmd(DMA1_Channel4, ENABLE);
-
-            // 等待DMA传输完成，同时LED2闪烁
-            while (1)
-            {
-                // 判断 DMA1 通道4 传输完成标志
-                if (DMA_GetFlagStatus(DMA1_FLAG_TC4))
-                {
-                    DMA_ClearFlag(DMA1_FLAG_TC4); // 清除标志
-                    break;
-                }
-
-                LED7 = !LED7;
-                delay_ms(50);
-            }
-
-            LED7 = 1;
-            printf("Transimit Finished!\r\n");
-            // 2. 传输完成后关闭DMA
-            DMA_Cmd(DMA1_Channel4, DISABLE);
-        }
-
-        i++;
-        delay_ms(10);
-
-        if (i == 20)
-        {
-            LED0 = !LED0;
-            i = 0;
+        for (int i = 0; i < 8 ;i++){
+            *led_states[i] = 0; // 全部灭
+            delay_ms(500); // 延时 300ms
+            *led_states[i] = 1; // 全部亮
+            //delay_ms(300);
         }
     }
 }
