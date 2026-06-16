@@ -12,8 +12,25 @@
 #include "remote.h"
 #include <stdint.h>
 
+TIMER_TypeDef g_tim1 = { 0 };
+TIMER_TypeDef g_tim2 = { 0 };
 TIMER_TypeDef g_tim3 = { 0 };
 TIMER_TypeDef g_tim4 = { 0 };
+TIMER_TypeDef g_tim5 = { 0 };
+TIMER_TypeDef g_tim6 = { 0 };
+TIMER_TypeDef g_tim7 = { 0 };
+TIMER_TypeDef g_tim8 = { 0 };
+
+// 底层拼接，不展开参数
+#define _TIMER_SET_CLOCK(x,arr,psc) do{ \
+    g_tim##x.arr = arr; \
+    g_tim##x.psc = psc; \
+    g_tim##x.tick_us = calc_tick_us(arr, psc); \
+    g_tim##x.tick = 0; \
+}while(0)
+
+// 外层中转，先展开 x、arr、psc 再拼接
+#define TIMER_SET_CLOCK(x,arr,psc) _TIMER_SET_CLOCK(x,arr,psc)  // 这样写的好处是，调用时传入的 arr、psc 可以是表达式，而不是单纯的数值常量。又或者x是TIM_NUM这种宏定义，那就会先展开成具体的数字，再进行内层宏的拼接。
 
 static u32 calc_tick_us(u16 arr, u16 psc)
 {
@@ -68,7 +85,31 @@ void My_TIM3_Init(u16 arr, u16 psc)
     TIM_Cmd(TIM3, ENABLE);
 
     //5. 初始化 g_tim3 时间基准参数
-    TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
+    //TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
+    TIMER_SET_CLOCK(3, arr, psc);  // 使用宏简化代码
+}
+
+void My_TIM3_PWM_Init(u16 arr, u16 psc)
+{
+    My_TIM3_Init(arr, psc);
+    GPIO_InitTypeDef GPIO_InitStructure;
+    //1.  配置 GPIOC 时钟和 PC6 复用推挽输出
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO, ENABLE);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; // 复用推挽
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+    //2. 配置 TIM3 的 PWM 模式
+    TIM_OCInitTypeDef TIM_OCInitStructure;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1; // PWM 模式 1
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; // 使能输出
+    TIM_OCInitStructure.TIM_Pulse = 0; // 初始占空比为
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low; // 输出极性低
+    TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+    TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable); // 使能预装载寄存器，更新事件时才会把 CCR1 的值加载到比较寄存器中，这样就不会出现占空比设置后立即生效导致的毛刺问题。
+
+    // TIMER_SET_CLOCK(3, arr, psc);  // 使用宏简化代码
 }
 
 void TIM4_Init(u16 arr, u16 psc)
@@ -80,10 +121,7 @@ void TIM4_Init(u16 arr, u16 psc)
     TIM4->CR1 |= 0x01;
     MY_NVIC_Init(0, 3, TIM4_IRQn, 2);
 
-    g_tim4.arr = arr;
-    g_tim4.psc = psc;
-    g_tim4.tick_us = calc_tick_us(arr, psc);
-    g_tim4.tick = 0;
+    TIMER_SET_CLOCK(4, arr, psc);  // 使用宏简化代码
 }
 
 void TIM6_Init(u16 arr, u16 psc)
@@ -94,6 +132,7 @@ void TIM6_Init(u16 arr, u16 psc)
     TIM6->DIER |= 1 << 0;
     TIM6->CR1 |= 0x01;
     MY_NVIC_Init(0, 3, TIM6_IRQn, 2);
+    TIMER_SET_CLOCK(6, arr, psc);  // 使用宏简化代码
 }
 
 void TIM7_Init(u16 arr, u16 psc)
@@ -217,11 +256,13 @@ void TIM2_Input_Capture_Update(void)
 extern void remote_irq_func(void);
 extern void led_irq_func(void);
 extern void adc_irq_func(TIMER_TypeDef* callback_timer);
+extern void led_pwm_func(void);
 
 #define USE_LED      1
-#define USE_REMOTE   0
+#define USE_PWM_TEST   1
 #define USE_IC_UPDATE 0
 #define USE_ADC_REF  0
+#define USE_REMOTE   0
 
 void TIM3_IRQHandler(void)
 {
@@ -233,6 +274,9 @@ void TIM3_IRQHandler(void)
 #endif
 #if USE_LED
         led_irq_func();
+#endif
+#if USE_PWM_TEST
+        led_pwm_func();
 #endif
 #if USE_IC_UPDATE
         TIM2_Input_Capture_Update();

@@ -64,7 +64,7 @@ LED_Operate led_funcs[] = {
     led4_operate, led5_operate, led6_operate, led7_operate
 };
 
-volatile unsigned long *led_states[] = {&LED0, &LED1, &LED2, &LED3, &LED4, &LED5, &LED6, &LED7}; // 初始化 LED 状态为全灭
+volatile unsigned long* led_states[] = { &LED0, &LED1, &LED2, &LED3, &LED4, &LED5, &LED6, &LED7 }; // 初始化 LED 状态为全灭
 /* 测试用循环控制函数 */
 void led_loop_control(void)
 {
@@ -94,7 +94,30 @@ void led_irq_func(void) {
         if (tim3_count >= TIMER_MS(&g_tim3, TIM3_ONE_SECOND_COUNT))
         {
             tim3_count = 0;
-            LED6 = !LED6;   // 1秒翻转LED
+            LED5 = !LED5;   // 1秒翻转LED
         }
     }
+}
+#include "pwm.h"
+
+// 先使用pwm中的init函数来初始化TIM3，然后在这个函数中实现LED的PWM调光功能
+void led_pwm_func(void) {
+    // 这里可以实现 LED 的 PWM 调光功能，具体实现取决于你的硬件连接和需求
+    static uint16_t tim3_count_10ms = 0;
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+    {
+        tim3_count_10ms++;
+        if (tim3_count_10ms >= TIMER_MS(&g_tim3, 10))
+        {
+            tim3_count_10ms = 0;
+            static uint8_t brightness = 0;
+            static int8_t direction = 1; // 亮度变化方向，1为增加，-1为减少
+            brightness += direction;
+            if (brightness == 0 || brightness == 100) {
+                direction = -direction; // 到达边界时改变方向
+            }
+            TIM3_Set_PWM_Duty(brightness, brightness);
+        }
+    }
+    // 例如，可以使用 TIM3 的 PWM 模式来控制 LED 的亮度
 }

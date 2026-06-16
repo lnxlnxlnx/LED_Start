@@ -44,5 +44,7 @@ extern volatile unsigned long *led_states[]; // 用于存储 LED 状态的变量
 void led_loop_control(void);//测试用循环控制函数
 
 void led_irq_func(void);//定时器3中断服务函数，处理LED相关的定时任务
+
+void led_pwm_func(void); // LED PWM 调光函数声明
 		 				    
 #endif
