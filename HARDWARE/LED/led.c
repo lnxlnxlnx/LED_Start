@@ -111,12 +111,20 @@ void led_pwm_func(void) {
         {
             tim3_count_10ms = 0;
             static uint8_t brightness = 0;
+            static uint8_t brightness_2 = 50; // 第二个 LED 的亮度初始值
             static int8_t direction = 1; // 亮度变化方向，1为增加，-1为减少
+            static int8_t direction_2 = 1; // 亮度变化方向，1为增加，-1为减少
+
             brightness += direction;
+            brightness_2 += direction_2;
+
             if (brightness == 0 || brightness == 100) {
                 direction = -direction; // 到达边界时改变方向
             }
-            TIM3_Set_PWM_Duty(brightness, brightness);
+            if (brightness_2 == 0 || brightness_2 == 100) {
+                direction_2 = -direction_2; // 到达边界时改变方向
+            }
+            TIM3_Set_PWM_Duty(brightness, brightness_2); // 设置 TIM3 的 PWM 占空比，控制 LED 亮度
         }
     }
     // 例如，可以使用 TIM3 的 PWM 模式来控制 LED 的亮度

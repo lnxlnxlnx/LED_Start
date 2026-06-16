@@ -32,7 +32,7 @@ int main(void)
     printf("NANO STM32\r\n");
     printf("DMA TEST\r\n");
     printf("KEY0:Start\r\n");
-    TIM3_PWM_Init(999, 72 - 1); // 初始化 TIM3 用于 PWM 输出，频率约为 1 kHz
+    TIM3_PWM_Init_2(999, 72 - 1); // 初始化 TIM3 用于 PWM 输出，频率约为 1 kHz
 
     u8 i = 0;
     u8 current_key = 0;
