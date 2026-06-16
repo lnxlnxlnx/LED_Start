@@ -32,6 +32,18 @@ void TIM3_Init(u16 arr, u16 psc)
     TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
 }
 
+static void NVIC_TIM3_Init(void)
+{
+    //MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+    NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+
+    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;     //这几个NVIC结构体的成员都是uint8_t类型的，所以直接赋值就行了，不需要强制类型转换。
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
 void My_TIM3_Init(u16 arr, u16 psc)
 {
     // TIM3_Init(TIM3_ONE_SECOND_COUNT, 72 - 1);
@@ -49,7 +61,8 @@ void My_TIM3_Init(u16 arr, u16 psc)
     TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
 
     //3. 配置NVIC--中断管理
-    MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+    //MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+    NVIC_TIM3_Init();
 
     //4. 启动定时器
     TIM_Cmd(TIM3, ENABLE);
