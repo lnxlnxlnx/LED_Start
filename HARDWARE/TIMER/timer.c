@@ -10,6 +10,7 @@
 #include "smg.h"
 #include "elog.h"
 #include "remote.h"
+#include "stopwatch.h"
 #include <stdint.h>
 
 TIMER_TypeDef g_tim1 = { 0 };
@@ -258,9 +259,9 @@ extern void led_irq_func(void);
 extern void adc_irq_func(TIMER_TypeDef* callback_timer);
 extern void led_pwm_func(void);
 
-#define USE_LED      1
+#define USE_LED      0       /* 停止watch 有自己的 LED 控制, 禁用旧版 led_irq_func */
 #define USE_PWM_TEST   0
-#define USE_IC_UPDATE 1
+#define USE_IC_UPDATE 0      /* 停止watch 有自己的 LED 控制, 禁用旧版 TIM2 测试 */
 #define USE_ADC_REF  0
 #define USE_REMOTE   0
 
@@ -268,6 +269,12 @@ void TIM3_IRQHandler(void)
 {
     if (TIM3->SR & 0X01) {
         g_tim3.tick++;
+
+        /* ── 数码管动态扫描 (每 1ms 扫一位, 交替消影) ── */
+        LED_SMG_Scan();
+
+        /* ── 秒表 Tick (厘秒累加 / 冻结倒计时 / LED 控制) ── */
+        Stopwatch_TimerTick();
 
 #if USE_REMOTE
         remote_irq_func();

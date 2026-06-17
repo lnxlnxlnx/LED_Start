@@ -1,7 +1,7 @@
 /**
  * @file    main.c
- * @brief   主程序
- *          每 1 秒在 8 位数码管上循环显示 0~9
+ * @brief   主程序 — 多功能秒表系统
+ *          考试要求: 数码管高精度秒表 + 按键控制 + 记次冻结 + LED指示 + 串口日志
  */
 
 #include "sys.h"
@@ -18,27 +18,33 @@
 #include "pwm.h"
 #include "adc.h"
 #include "dma.h"
+#include "stopwatch.h"   /* 多功能秒表 */
 #include "stm32f10x_usart.h"
 #include "stm32f10x_dma.h"
 
 int main(void)
 {
-    Stm32_Clock_Init(9);    //系统时钟设置
-    uart_init(115200);  //串口初始化
-    LED_Init();		  		//初始化与LED连接的硬件接口
-    My_KEY_Init();				//按键初始化
-    My_TIM3_Init(999, 72 - 1);				//定时器初始化
-    EXTIX_Init();                //外部中断初始化
-    printf("NANO STM32\r\n");
-    printf("DMA TEST\r\n");
-    printf("KEY0:Start\r\n");
-    //TIM3_PWM_Init_2(999, 72 - 1); // 初始化 TIM3 用于 PWM 输出，频率约为 1 kHz
-    TIM2_Cap_Init(0xFFFF, 72 - 1); // 初始化 TIM2 用于输入捕获，CNT频率约为 1 MHz
+    Stm32_Clock_Init(9);    // 系统时钟设置 72MHz
+    uart_init(115200);      // 串口初始化 (波特率 115200, 用于 printf + 秒表日志)
 
-    u8 i = 0;
-    u8 current_key = 0;
+    /* ── 外设初始化 ── */
+    LED_Init();              // 初始化 PC0~PC7 LED (低电平亮)
+    LED_SMG_Init();          // ★ 数码管 GPIO 初始化 (必须先于定时器启动)
+    My_KEY_Init();           // 按键 GPIO 初始化 (PC8,PC9,PD2,PA0)
+    TIM3_Init(0, 72 - 1);  // 定时器3 1ms 中断 (秒表计时 + 数码管扫描)
+    //EXTIX_Init();          // 禁用: 秒表用 KEY_Scan 轮询, EXTI 中断会与 LED 控制冲突
+
+    printf("NANO STM32 多功能秒表系统\r\n");
+    printf("KEY1: 启动/暂停  KEY2: 清零(暂停时)  WK_UP: 记次\r\n");
+
+    /* ── 秒表状态初始化 ── */
+    Stopwatch_Init();        // 清零状态, 数码管显示 00-00-00
+
+    printf("=== 就绪 ===\r\n");
+
     while (1)
     {
-        delay_ms(200);
+        Stopwatch_KeyProcess();     // 按键扫描 + 秒表状态处理 (约 50Hz)
+        delay_ms(20);
     }
 }
