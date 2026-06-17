@@ -31,7 +31,7 @@ int main(void)
     LED_Init();              // 初始化 PC0~PC7 LED (低电平亮)
     LED_SMG_Init();          // ★ 数码管 GPIO 初始化 (必须先于定时器启动)
     My_KEY_Init();           // 按键 GPIO 初始化 (PC8,PC9,PD2,PA0)
-    My_TIM3_Init(999, 72 - 1);   // TIM3 1ms 中断 (秒表计时 + 数码管扫描 + 按键消抖)
+    My_TIM3_Init(99, 72 - 1);   // TIM3 1ms 中断 (秒表计时 + 数码管扫描 + 按键消抖)
     //EXTIX_Init();               // 禁用: 秒表在 TIM3 ISR 中处理按键, EXTI 会冲突
 
     printf("NANO STM32 多功能秒表系统\r\n");
