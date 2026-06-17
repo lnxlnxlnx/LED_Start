@@ -28,7 +28,7 @@ build/
 out/
 
 # Doxygen documentation
-doc/
+# doc/
 doxygen/
 
 # Temporary files

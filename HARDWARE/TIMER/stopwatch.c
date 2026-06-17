@@ -211,7 +211,7 @@ done:
 }
 
 /* ---------- 数码管显示 ---------- */
-static void sw_UpdateDisplay(void)
+static void sw_UpdateDisplay(void)  // 显示逻辑和计算逻辑分离, 方便后续扩展记次冻结显示不同内容
 {
     const Stopwatch_Time *dp;
     dp = (g_state == SW_LAP_FROZEN) ? &g_lap : &g_time;
