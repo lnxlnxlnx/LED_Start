@@ -17,7 +17,9 @@
 #define ADC_CH9  9  	//通道9
 
 void Adc_Init(void);  //ADC通道初始化
+void My_ADC_Init(void);
 u16  Get_Adc(u8 ch);  //获得某个通道值 
+u16  My_Get_Adc(u8 ch);  //获得某个通道值 
 u16 Get_Adc_Average(u8 ch,u8 times); //得到某个通道采样的平均值 	
  
 #endif 

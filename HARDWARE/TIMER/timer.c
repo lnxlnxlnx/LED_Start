@@ -265,9 +265,10 @@ extern void led_pwm_func(void);
 #define USE_LED 0 /* 停止watch 有自己的 LED 控制, 禁用旧版 led_irq_func */
 #define USE_PWM_TEST 0
 #define USE_IC_UPDATE 0 /* 停止watch 有自己的 LED 控制, 禁用旧版 TIM2 测试 */
-#define USE_ADC_REF 0
+#define USE_ADC_REF 1
 #define USE_REMOTE 0
-#define USE_USART_REFLECT 1
+#define USE_USART_REFLECT 0
+#define USE_TIMER_TEST 0
 #include "usart.h"
 // extern u8  USART_RX_BUF[USART_REC_LEN]; //接收缓冲,最大USART_REC_LEN个字节.末字节为换行符
 // extern u16 USART_RX_STA;         		//接收状态标记
@@ -278,35 +279,12 @@ void TIM3_IRQHandler(void)
         g_tim3.tick++;
 
         /* ── 数码管动态扫描 (每 1ms 扫一位, 交替消影) ── */
-        LED_SMG_Scan();
-
+        //LED_SMG_Scan();
+#if USE_USART_REFLECT
         /* ── 秒表 Tick (厘秒累加 / 冻结倒计时 / LED 控制) ── */
         Stopwatch_TimerTick();
+#endif
 #if USE_USART_REFLECT
-        // // 串口反射测试  // 没有效果
-        // static u16 len = 0;
-        // static u32 rx_time_tick = 0;
-        // rx_time_tick++;
-        // if (rx_time_tick >= TIMER_MS(&g_tim3, 500))
-        // {
-        //     printf("test\r\n");
-        //     rx_time_tick = 0;
-        //     if (USART_RX_STA & 0x8000)
-        //     {
-        //         len = USART_RX_STA & 0x3fff;
-        //         printf("\r\n您发送的消息为:\r\n\r\n");
-
-        //         for (u8 t = 0; t < len; t++)
-        //         {
-        //             USART1->DR = USART_RX_BUF[t];
-        //             while ((USART1->SR & 0X40) == 0)
-        //                 ;
-        //         }
-
-        //         printf("\r\n\r\n");
-        //         USART_RX_STA = 0;
-        //     }
-        // }
 #endif
 
 #if USE_REMOTE
