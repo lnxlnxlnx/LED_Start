@@ -1,6 +1,7 @@
 #ifndef __DMA_H
 #define	__DMA_H	   
 #include "sys.h"
+#include "stm32f10x_dma.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK NANO STM32开发板
@@ -15,7 +16,9 @@
 ////////////////////////////////////////////////////////////////////////////////// 
 							    					    
 void MYDMA_Config(DMA_Channel_TypeDef*DMA_CHx,u32 cpar,u32 cmar,u16 cndtr);//配置DMA1_CHx
+void MY_DMA_Config(DMA_Channel_TypeDef* DMA_CHx, u32 peripheralBaseAddr, u32 bufferBaseAddr, u16 bufferSize);
 void MYDMA_Enable(DMA_Channel_TypeDef*DMA_CHx);//使能DMA1_CHx
+void MY_DMA_Enable(DMA_Channel_TypeDef*DMA_CHx);//使能DMA1_CHx
 
 
 void dma_init(u32 cmar, u16 cndtr);//DMA初始化函数，参数为要传输的变量的指针和传输内容的大小
