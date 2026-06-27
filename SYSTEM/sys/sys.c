@@ -1,4 +1,7 @@
 #include "sys.h"
+#include "stm32f10x_pwr.h"
+#include "stm32f10x_exti.h"
+#include "core_cm3.h"
 
 
 //STM32F103核心板例程
@@ -25,7 +28,52 @@ void NVIC_Configuration(void)
 //BITx:需要使能的位;
 //TRIM:触发模式,1,下升沿;2,上降沿;3，任意电平触发
 //该函数一次只能配置1个IO口,多个IO口,需多次调用
-//该函数会自动开启对应中断,以及屏蔽线   	    
+//该函数会自动开启对应中断,以及屏蔽线   	   
+void My_Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIGGER_MODE){
+	GPIO_InitTypeDef GPIO_InitStructure;
+	EXTI_InitTypeDef EXTI_InitStructure;
+	uint16_t portSource, pinSource;
+
+	//1. 开AFIO时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+
+	//转换GPIOx为GPIO端口源
+	switch(GPIOx){
+		case GPIO_A: portSource = GPIO_PortSourceGPIOA; break;
+		case GPIO_B: portSource = GPIO_PortSourceGPIOB; break;
+		case GPIO_C: portSource = GPIO_PortSourceGPIOC; break;
+		case GPIO_D: portSource = GPIO_PortSourceGPIOD; break;
+		case GPIO_E: portSource = GPIO_PortSourceGPIOE; break;
+		case GPIO_F: portSource = GPIO_PortSourceGPIOF; break;
+		case GPIO_G: portSource = GPIO_PortSourceGPIOG; break;
+		default: return; // 错误的端口
+	}
+	pinSource = (uint16_t)(BITx);
+
+	// 2. AFIO->EXTI映射
+	GPIO_EXTILineConfig(portSource, pinSource);	// 引脚编号数字
+
+	// 3. 配置EXTI模式
+	switch(TRIGGER_MODE){
+		case FTIR: // 下降沿触发
+			EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+			break;
+		case RTIR: // 上升沿触发
+			EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+			break;
+		default: // 错误的触发模式
+			return;
+	}
+
+	EXTI_InitStructure.EXTI_Line = (uint16_t)(1 << BITx);
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+
+	// 4. 初始化EXTI
+	EXTI_Init(&EXTI_InitStructure);
+}
+
+
 void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM) 
 {
 	u8 EXTADDR;
