@@ -1,4 +1,8 @@
 #include "sys.h"
+#include "stm32f10x_pwr.h"
+#include "stm32f10x_exti.h"
+#include "core_cm3.h"
+#include <stm32f10x_flash.h>
 
 
 //STM32F103核心板例程
@@ -25,7 +29,52 @@ void NVIC_Configuration(void)
 //BITx:需要使能的位;
 //TRIM:触发模式,1,下升沿;2,上降沿;3，任意电平触发
 //该函数一次只能配置1个IO口,多个IO口,需多次调用
-//该函数会自动开启对应中断,以及屏蔽线   	    
+//该函数会自动开启对应中断,以及屏蔽线   	   
+void My_Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIGGER_MODE){
+	GPIO_InitTypeDef GPIO_InitStructure;
+	EXTI_InitTypeDef EXTI_InitStructure;
+	uint16_t portSource, pinSource;
+
+	//1. 开AFIO时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+
+	//转换GPIOx为GPIO端口源
+	switch(GPIOx){
+		case GPIO_A: portSource = GPIO_PortSourceGPIOA; break;
+		case GPIO_B: portSource = GPIO_PortSourceGPIOB; break;
+		case GPIO_C: portSource = GPIO_PortSourceGPIOC; break;
+		case GPIO_D: portSource = GPIO_PortSourceGPIOD; break;
+		case GPIO_E: portSource = GPIO_PortSourceGPIOE; break;
+		case GPIO_F: portSource = GPIO_PortSourceGPIOF; break;
+		case GPIO_G: portSource = GPIO_PortSourceGPIOG; break;
+		default: return; // 错误的端口
+	}
+	pinSource = (uint16_t)(BITx);
+
+	// 2. AFIO->EXTI映射
+	GPIO_EXTILineConfig(portSource, pinSource);	// 引脚编号数字
+
+	// 3. 配置EXTI模式
+	switch(TRIGGER_MODE){
+		case FTIR: // 下降沿触发
+			EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+			break;
+		case RTIR: // 上升沿触发
+			EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+			break;
+		default: // 错误的触发模式
+			return;
+	}
+
+	EXTI_InitStructure.EXTI_Line = (uint16_t)(1 << BITx);
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+
+	// 4. 初始化EXTI
+	EXTI_Init(&EXTI_InitStructure);
+}
+
+
 void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM) 
 {
 	u8 EXTADDR;
@@ -57,18 +106,31 @@ void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM)
 //NVIC_SubPriority和NVIC_PreemptionPriority的原则是,数值越小,越优先	   
 void MY_NVIC_Init(u8 NVIC_PreemptionPriority,u8 NVIC_SubPriority,u8 NVIC_Channel,u8 NVIC_Group)	 
 { 
-	u32 temp;
-	SysTick_Config(SystemCoreClock/1000); // 1ms中断一次	
-	NVIC_PriorityGroupConfig(NVIC_Group);//设置分组
-	temp=NVIC_PreemptionPriority<<(4-NVIC_Group);	  
-	temp|=NVIC_SubPriority&(0x0f>>NVIC_Group);
-	temp&=0xf;//取低四位  
-	NVIC->ISER[NVIC_Channel/32]|=(1<<NVIC_Channel%32);//使能中断位(要清除的话,相反操作就OK) 
-	NVIC->IP[NVIC_Channel]|=temp<<4;//设置响应优先级和抢断优先级   	    	  				   
+    NVIC_InitTypeDef NVIC_InitStruct;
+
+    // 1. 设置全局中断分组（原NVIC_PriorityGroupConfig）
+	switch(NVIC_Group) {
+		case 0: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0); break; // 0位抢占优先级,4位响应优先级
+		case 1: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1); break; // 1位抢占优先级,3位响应优先级
+		case 2: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); break; // 2位抢占优先级,2位响应优先级
+		case 3: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3); break; // 3位抢占优先级,1位响应优先级
+		case 4: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4); break; // 4位抢占优先级,0位响应优先级
+		default: return; // 错误的分组
+	}
+
+    // 2. SysTick配置1ms中断（原函数自带逻辑保留）
+    SysTick_Config(SystemCoreClock / 1000);
+
+    // 3. 填充NVIC结构体，标准库自动处理ISER、IP寄存器
+    NVIC_InitStruct.NVIC_IRQChannel = (IRQn_Type)NVIC_Channel;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = NVIC_PreemptionPriority;
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = NVIC_SubPriority;
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE; // 等价 NVIC->ISER |= 1<<ch
+    NVIC_Init(&NVIC_InitStruct);   	  				   
 }
 
 // 关闭单个 NVIC 中断通道（和 MY_NVIC_Init 反操作）
-void MY_NVIC_DeInit(u8 NVIC_Channel)
+void _NVIC_DeInit(u8 NVIC_Channel)
 {
     // 关闭中断使能
     NVIC->ICER[NVIC_Channel / 32] = 1 << (NVIC_Channel % 32);
@@ -81,6 +143,32 @@ void MY_NVIC_DeInit(u8 NVIC_Channel)
 }
 
 // 关闭指定 EXTI 中断线（比如 EXTI9_5 里的 EXTI8、EXTI9）
+void My_NVIC_DeInit(u8 NVIC_Channel){
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	// 1. 禁用对应的 NVIC 中断通道
+	NVIC_InitStructure.NVIC_IRQChannel = (IRQn_Type)NVIC_Channel;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	// 2. 清除中断标志位
+	NVIC_ClearPendingIRQ((IRQn_Type)NVIC_Channel);
+}
+
+// ban的时候不是看NVIC，而是上面Ex初始化的是哪个引脚就ban哪个8、9、2、0引脚就对应8、9、2、0的BITx
+void My_Ex_NVIC_DeInit(u8 BITx){
+    EXTI_InitTypeDef EXTI_InitStruct;
+
+    EXTI_InitStruct.EXTI_Line = (uint16_t)(1 << BITx);
+    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+    EXTI_InitStruct.EXTI_LineCmd = DISABLE; // 关闭IMR屏蔽位
+    EXTI_Init(&EXTI_InitStruct);
+
+    // 清除EXTI挂起标志位
+    EXTI_ClearITPendingBit((uint16_t)(1 << BITx));
+}
+
 void Ex_NVIC_DeInit(u8 BITx)
 {
     // 关闭中断屏蔽
@@ -112,6 +200,17 @@ Ex_NVIC_DeInit(9);
 //不能在这里执行所有外设复位!否则至少引起串口不工作.		    
 //把所有时钟寄存器复位		  
 void MYRCC_DeInit(void)
+{
+    RCC_DeInit(); // 标准库一键复位所有RCC寄存器，替代大量寄存器赋值
+
+    // 配置向量表，和原逻辑不变
+#ifdef  VECT_TAB_RAM
+    MY_NVIC_SetVectorTable(0x20000000, 0x0);
+#else
+    MY_NVIC_SetVectorTable(0x08000000,0x0);
+#endif
+}
+void _RCC_DeInit(void)
 {	
  	RCC->APB1RSTR = 0x00000000;//复位结束			 
 	RCC->APB2RSTR = 0x00000000; 
@@ -187,7 +286,67 @@ void JTAG_Set(u8 mode)
 } 
 //系统时钟初始化函数
 //pll:选择的倍频数，从2开始，最大值为16		 
+
+/*
+复位 RCC
+开启 HSE
+先配置 FLASH 访问延时
+配置 AHB/APB 分频
+配置 PLL、开启 PLL
+切换系统时钟到 PLL
+*/
 void Stm32_Clock_Init(u8 PLL)
+{
+    unsigned char temp=0;
+    MYRCC_DeInit();
+
+    // 开启HSE
+    RCC_HSEConfig(RCC_HSE_ON);
+    while(RCC_WaitForHSEStartUp() != SUCCESS); // 等待HSE稳定
+
+    // FLASH延时2周期
+	RCC_AHBPeriphClockCmd(RCC_AHBENR_FLITFEN | RCC_AHBENR_SRAMEN, ENABLE); // 使能FLASH和SRAM时钟
+    FLASH_SetLatency(FLASH_Latency_2);
+
+    // AHB、APB预分频
+    RCC_HCLKConfig(RCC_SYSCLK_Div1);
+    RCC_PCLK1Config(RCC_HCLK_Div2);
+    RCC_PCLK2Config(RCC_HCLK_Div1);
+
+    // PLL配置 HSE倍频
+    //PLL -= 2;
+    //RCC_PLLConfig(RCC_PLLSource_HSE_Div1, (RCC_PLLMul_TypeDef)PLL);
+	switch(PLL) {
+		case 2:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_2); break;
+		case 3:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_3); break;
+		case 4:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_4); break;
+		case 5:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_5); break;
+		case 6:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6); break;
+		case 7:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_7); break;
+		case 8:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_8); break;
+		case 9:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9); break;
+		case 10:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_10); break;
+		case 11:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_11); break;
+		case 12:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_12); break;
+		case 13:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_13); break;
+		case 14:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_14); break;
+		case 15:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_15); break;
+		case 16:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_16); break;
+		default:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9); break;
+	}
+    RCC_PLLCmd(ENABLE);
+    while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET); // 等待PLL锁定
+
+    // 切换系统时钟为PLL
+    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+    while(1)
+    {
+        temp = RCC_GetSYSCLKSource();       // 返回 CFGR[3:2] = 0x00/0x04/0x08
+        if(temp == RCC_CFGR_SWS_PLL) break; // 0x08 = PLL 已就绪
+    }
+}
+
+void _Stm32_Clock_Init(u8 PLL)
 {
 	unsigned char temp=0;   
 	MYRCC_DeInit();		  //复位并配置向量表
