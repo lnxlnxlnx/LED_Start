@@ -92,6 +92,7 @@ void NVIC_Configuration(void);
 
 /////////////////////////////////////////////////////////////////  
 void Stm32_Clock_Init(u8 PLL);  //时钟初始化  
+void _Stm32_Clock_Init(u8 PLL);  //时钟初始化  
 void Sys_Soft_Reset(void);      //系统软复位
 void Sys_Standby(void);         //待机模式 	
 void MY_NVIC_SetVectorTable(u32 NVIC_VectTab, u32 Offset);//设置偏移地址

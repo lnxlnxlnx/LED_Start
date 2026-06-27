@@ -2,6 +2,7 @@
 #include "stm32f10x_pwr.h"
 #include "stm32f10x_exti.h"
 #include "core_cm3.h"
+#include <stm32f10x_flash.h>
 
 
 //STM32F103核心板例程
@@ -199,6 +200,17 @@ Ex_NVIC_DeInit(9);
 //不能在这里执行所有外设复位!否则至少引起串口不工作.		    
 //把所有时钟寄存器复位		  
 void MYRCC_DeInit(void)
+{
+    RCC_DeInit(); // 标准库一键复位所有RCC寄存器，替代大量寄存器赋值
+
+    // 配置向量表，和原逻辑不变
+#ifdef  VECT_TAB_RAM
+    MY_NVIC_SetVectorTable(0x20000000, 0x0);
+#else
+    MY_NVIC_SetVectorTable(0x08000000,0x0);
+#endif
+}
+void _RCC_DeInit(void)
 {	
  	RCC->APB1RSTR = 0x00000000;//复位结束			 
 	RCC->APB2RSTR = 0x00000000; 
@@ -274,7 +286,67 @@ void JTAG_Set(u8 mode)
 } 
 //系统时钟初始化函数
 //pll:选择的倍频数，从2开始，最大值为16		 
+
+/*
+复位 RCC
+开启 HSE
+先配置 FLASH 访问延时
+配置 AHB/APB 分频
+配置 PLL、开启 PLL
+切换系统时钟到 PLL
+*/
 void Stm32_Clock_Init(u8 PLL)
+{
+    unsigned char temp=0;
+    MYRCC_DeInit();
+
+    // 开启HSE
+    RCC_HSEConfig(RCC_HSE_ON);
+    while(RCC_WaitForHSEStartUp() != SUCCESS); // 等待HSE稳定
+
+    // FLASH延时2周期
+	RCC_AHBPeriphClockCmd(RCC_AHBENR_FLITFEN | RCC_AHBENR_SRAMEN, ENABLE); // 使能FLASH和SRAM时钟
+    FLASH_SetLatency(FLASH_Latency_2);
+
+    // AHB、APB预分频
+    RCC_HCLKConfig(RCC_SYSCLK_Div1);
+    RCC_PCLK1Config(RCC_HCLK_Div2);
+    RCC_PCLK2Config(RCC_HCLK_Div1);
+
+    // PLL配置 HSE倍频
+    //PLL -= 2;
+    //RCC_PLLConfig(RCC_PLLSource_HSE_Div1, (RCC_PLLMul_TypeDef)PLL);
+	switch(PLL) {
+		case 2:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_2); break;
+		case 3:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_3); break;
+		case 4:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_4); break;
+		case 5:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_5); break;
+		case 6:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6); break;
+		case 7:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_7); break;
+		case 8:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_8); break;
+		case 9:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9); break;
+		case 10:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_10); break;
+		case 11:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_11); break;
+		case 12:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_12); break;
+		case 13:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_13); break;
+		case 14:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_14); break;
+		case 15:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_15); break;
+		case 16:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_16); break;
+		default:RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9); break;
+	}
+    RCC_PLLCmd(ENABLE);
+    while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET); // 等待PLL锁定
+
+    // 切换系统时钟为PLL
+    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+    while(1)
+    {
+        temp = RCC_GetSYSCLKSource();       // 返回 CFGR[3:2] = 0x00/0x04/0x08
+        if(temp == RCC_CFGR_SWS_PLL) break; // 0x08 = PLL 已就绪
+    }
+}
+
+void _Stm32_Clock_Init(u8 PLL)
 {
 	unsigned char temp=0;   
 	MYRCC_DeInit();		  //复位并配置向量表
