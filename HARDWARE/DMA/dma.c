@@ -22,6 +22,33 @@ u16 DMA1_MEM_LEN;//保存DMA每次数据传送的长度
 //cpar:外设地址
 //cmar:存储器地址
 //cndtr:数据传输量  
+
+void MY_DMA_Config(DMA_Channel_TypeDef* DMA_CHx, u32 peripheralBaseAddr, u32 bufferBaseAddr, u16 bufferSize){
+	// 1. 开启 DMA1 时钟
+	DMA_InitTypeDef DMA_InitStructure;
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+	delay_ms(5); // 等待 DMA 时钟稳定
+
+	//2. 配置 DMA1 初始化结构体
+	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+	DMA_InitStructure.DMA_BufferSize = bufferSize;
+	DMA_InitStructure.DMA_MemoryBaseAddr = bufferBaseAddr;
+	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;	// 从内存到外设(外设作为目标（Destination）)
+	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;	// 禁止内存到内存的传输
+	DMA_InitStructure.DMA_PeripheralBaseAddr = peripheralBaseAddr;
+	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;	// 外设数据宽度为8位
+	DMA_InitStructure.DMA_PeripheralInc = DMA_MemoryInc_Disable;	// 外设地址不增量
+	DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;	// 设置优先级为中等
+
+	//3. 初始化
+	DMA_Init(DMA_CHx, &DMA_InitStructure);
+	DMA1_MEM_LEN = bufferSize; // 保存 DMA 传输数据量
+
+	//4. 先关闭 DMA 传输，初始化时不能打开 DMA
+	DMA_Cmd(DMA_CHx, DISABLE);
+}
 void MYDMA_Config(DMA_Channel_TypeDef* DMA_CHx, u32 cpar, u32 cmar, u16 cndtr)
 {
 	RCC->AHBENR |= 1 << 0;			//开启DMA1时钟
@@ -42,7 +69,7 @@ void MYDMA_Config(DMA_Channel_TypeDef* DMA_CHx, u32 cpar, u32 cmar, u16 cndtr)
 }
 //开启一次DMA传输
 
-// 正确的 DMA 初始化函数（标准库版本，只调用一次）
+//DMA 初始化函数
 void dma_init(u32 cmar, u16 cndtr)
 {
 DMA_InitTypeDef DMA_InitStructure;
@@ -66,7 +93,7 @@ DMA_InitTypeDef DMA_InitStructure;
     DMA_Init(DMA1_Channel4, &DMA_InitStructure);
 
     // 4. 初始化时不能打开 DMA！！！
-    // DMA_Cmd(DMA1_Channel4, ENABLE);
+    DMA_Cmd(DMA1_Channel4, DISABLE);
 }
 
 void MYDMA_Enable(DMA_Channel_TypeDef* DMA_CHx)
@@ -75,4 +102,13 @@ void MYDMA_Enable(DMA_Channel_TypeDef* DMA_CHx)
 	DMA_CHx->CNDTR = DMA1_MEM_LEN; //DMA1,传输数据量 
 	DMA_CHx->CCR |= 1 << 0;          //开启DMA传输
 }
+void MY_DMA_Enable(DMA_Channel_TypeDef*DMA_CHx){
+	// 1. 关闭DMA
+	DMA_Cmd(DMA_CHx, DISABLE);
 
+	// 2. 设置传输长度
+	DMA_SetCurrDataCounter(DMA_CHx, DMA1_MEM_LEN);
+
+	// 3. dma_init
+	DMA_Cmd(DMA_CHx, ENABLE);
+}

@@ -22,3 +22,22 @@ void BEEP_Init(void)
   GPIOB->ODR|=1<<8;//PB8 输出高电平	
 	
 }
+
+void My_BEEP_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+
+  //1. 使能 GPIOB 时钟
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+
+  //2. 配置 PB8 为推挽输出
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; // 推挽输出
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  
+  //3. 初始化
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+  //4. 设置默认电平
+  GPIO_SetBits(GPIOB, GPIO_Pin_8); // 默认高电平，蜂鸣器关闭
+}
