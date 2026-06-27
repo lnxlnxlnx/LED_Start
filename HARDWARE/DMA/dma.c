@@ -72,9 +72,10 @@ void MYDMA_Config(DMA_Channel_TypeDef* DMA_CHx, u32 cpar, u32 cmar, u16 cndtr)
 //DMA 初始化函数
 void dma_init(u32 cmar, u16 cndtr)
 {
-DMA_InitTypeDef DMA_InitStructure;
+	DMA_InitTypeDef DMA_InitStructure;
 	
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+	delay_ms(5); // 等待 DMA 时钟稳定
 	/*DMA配置*/
 
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&USART1->DR;//串口数据寄存器地址
@@ -91,6 +92,7 @@ DMA_InitTypeDef DMA_InitStructure;
 
     // 3. 初始化 DMA
     DMA_Init(DMA1_Channel4, &DMA_InitStructure);
+	DMA1_MEM_LEN = cndtr; // 保存 DMA 传输数据量
 
     // 4. 初始化时不能打开 DMA！！！
     DMA_Cmd(DMA1_Channel4, DISABLE);

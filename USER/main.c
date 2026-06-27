@@ -29,8 +29,8 @@ int main(void)
     LED_Init();		  		//初始化与LED连接的硬件接口
     KEY_Init();				//按键初始化
     //MYDMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH + 2) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
-    dma_init((u32)SendBuff, (TEXT_LENTH + 2) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
-    //MY_DMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH + 2) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
+    //dma_init((u32)SendBuff, (TEXT_LENTH + 2) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
+    MY_DMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH + 2) * 100); //DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
     printf("NANO STM32\r\n");
     printf("DMA TEST\r\n");
     printf("KEY0:Start\r\n");
@@ -56,16 +56,16 @@ int main(void)
         if (t == KEY0_PRES) //KEY0按下
         {
             printf("\r\nDMA DATA:\r\n ");
-            USART1->CR3 = 1 << 7;       //使能串口1的DMA发送
-            MYDMA_Enable(DMA1_Channel4);//开始一次DMA传输！
+            USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE); //使能串口1的DMA发送
+            MY_DMA_Enable(DMA1_Channel4);//开始一次DMA传输！
 
             //等待DMA传输完成，此时我们来做另外一些事，点灯
             //实际应用中，传输数据期间，可以执行另外的任务
             while (1)
             {
-                if (DMA1->ISR & (1 << 13)) //等待通道4传输完成
+                if (DMA_GetFlagStatus(DMA1_FLAG_TC4) == SET) //等待通道4传输完成
                 {
-                    DMA1->IFCR |= 1 << 13; //清除通道4传输完成标志
+                    DMA_ClearFlag(DMA1_FLAG_TC4); //清除通道4传输完成标志
                     break;
                 }
 

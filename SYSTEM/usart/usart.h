@@ -2,6 +2,7 @@
 #define __USART_H
 #include "stdio.h"	
 #include "sys.h" 
+#include "stm32f10x_usart.h"
 
 //STM32F103核心板例程
 //库函数版本例程
