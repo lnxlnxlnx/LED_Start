@@ -1,6 +1,9 @@
 #include "remote.h"
 #include "delay.h"
 #include "usart.h"
+#include "timer.h"
+#include "led.h"
+#include "beep.h"
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -14,131 +17,194 @@
 //Copyright(C) 广州市星翼电子科技有限公司 2018-2028
 //All rights reserved									  
 //////////////////////////////////////////////////////////////////////////////////   
- 
+
 //红外遥控初始化
 //设置IO以及定时器3的输入捕获
-void Remote_Init(void)    			  
-{  
+void Remote_Init(void)
+{
 
-	RCC->APB1ENR|=1<<1;   	//TIM3 时钟使能 
-	RCC->APB2ENR|=1<<3;    	//使能PORTB时钟 
-	GPIOB->CRL&=0XFFFFFFF0;	//PB0 输入  
-	GPIOB->CRL|=0X00000008;	//上拉输入     
-	GPIOB->ODR|=1<<0;		//PB0 上拉
-	
-	TIM3->ARR=10000;  		//设定计数器自动重装值 最大10ms溢出  
-	TIM3->PSC=71;  			//预分频器,1M的计数频率,1us加1.	
-	TIM3->CCMR2|=1<<0;		//CC3S=01 	选择输入端 IC3映射到TI3上
- 	TIM3->CCMR2|=3<<4;  	//IC3F=0011 配置输入滤波器 8个定时器时钟周期滤波
- 	TIM3->CCMR2|=0<<2;  	//IC3PS=00 	配置输入分频,不分频 
-	TIM3->CCER|=0<<9; 		//CC3P=0	上升沿捕获
-	TIM3->CCER|=1<<8; 		//CC3E=1 	允许捕获计数器的值到捕获寄存器中
-	TIM3->DIER|=1<<3;   	//允许CC3IE捕获中断				
-	TIM3->DIER|=1<<0;   	//允许更新中断				
-	TIM3->CR1|=0x01;    	//使能定时器3
-  	MY_NVIC_Init(1,3,TIM3_IRQn,2);//抢占1，子优先级3，组2		
-	
+	RCC->APB1ENR |= 1 << 1;   	//TIM3 时钟使能 
+	RCC->APB2ENR |= 1 << 3;    	//使能PORTB时钟 
+	GPIOB->CRL &= 0XFFFFFFF0;	//PB0 输入  
+	GPIOB->CRL |= 0X00000008;	//上拉输入     
+	GPIOB->ODR |= 1 << 0;		//PB0 上拉
+
+	TIM3->ARR = 10000 - 1;  		//设定计数器自动重装值 最大10ms溢出  
+	TIM3->PSC = 72 - 1;  			//预分频器,1M的计数频率,1us加1.	
+	TIM3->CCMR2 |= 1 << 0;		//CC3S=01 	选择输入端 IC3映射到TI3上
+	TIM3->CCMR2 |= 3 << 4;  	//IC3F=0011 配置输入滤波器 8个定时器时钟周期滤波
+	TIM3->CCMR2 |= 0 << 2;  	//IC3PS=00 	配置输入分频,不分频 
+	TIM3->CCER |= 0 << 9; 		//CC3P=0	上升沿捕获
+	TIM3->CCER |= 1 << 8; 		//CC3E=1 	允许捕获计数器的值到捕获寄存器中
+	TIM3->DIER |= 1 << 3;   	//允许CC3IE捕获中断				
+	TIM3->DIER |= 1 << 0;   	//允许更新中断				
+	TIMER_SetTim3Clock(10000 - 1, 72 - 1);	// 100hz，每10ms溢出一次
+
+	TIM3->CR1 |= 0x01;    	//使能定时器3
+	MY_NVIC_Init(1, 3, TIM3_IRQn, 2);//抢占1，子优先级3，组2		
 }
 
- 
+
 //遥控器接收状态
 //[7]:收到了引导码标志
 //[6]:得到了一个按键的所有信息
 //[5]:保留	
 //[4]:标记上升沿是否已经被捕获								   
 //[3:0]:溢出计时器
-u8 	RmtSta=0;	  	  
+u8 	RmtSta = 0;
 u16 Dval;		//下降沿时计数器的值
-u32 RmtRec=0;	//红外接收到的数据	   		    
-u8  RmtCnt=0;	//按键按下的次数	  
-//定时器3中断服务程序	 
-void TIM3_IRQHandler(void)
-{ 	
-    u16 tsr;
-	tsr=TIM3->SR;
-	
-    if(tsr&0X01)//溢出
+u32 RmtRec = 0;	//红外接收到的数据	   		    
+u8  RmtCnt = 0;	//按键按下的次数	  
+
+//
+/**
+ * @description: 用于remote状态的更新
+ * @return {*}
+ */
+void remote_irq_func(void) {
+	u16 tsr;
+	tsr = TIM3->SR;
+
+	if (tsr & 0X01)//溢出
 	{
-		if(RmtSta&0x80)//上次有数据被接收到了
-		{	
-			RmtSta&=~0X10;						//取消上升沿已经被捕获标记
-			if((RmtSta&0X0F)==0X00)RmtSta|=1<<6;//标记已经完成一次按键的键值信息采集
-			if((RmtSta&0X0F)<14)RmtSta++;
+		if (RmtSta & 0x80)//上次有数据被接收到了
+		{
+			RmtSta &= ~0X10;						//取消上升沿已经被捕获标记
+			if ((RmtSta & 0X0F) == 0X00)RmtSta |= 1 << 6;//标记已经完成一次按键的键值信息采集
+			if ((RmtSta & 0X0F) < 14)RmtSta++;
 			else
 			{
-				RmtSta&=~(1<<7);//清空引导标识
-				RmtSta&=0XF0;	//清空计数器	
-			}						 	   	
-		}							    
+				RmtSta &= ~(1 << 7);//清空引导标识
+				RmtSta &= 0XF0;	//清空计数器	
+			}
+		}
 	}
- 	if(tsr&(1<<3))//CC3IE中断
-	{	  
-		if(RDATA)//上升沿捕获
-		{			
-			TIM3->CCER|=1<<9; 				//CC3P=1	设置为下降沿捕获
-			TIM3->CNT=0;					//清空定时器值
-			RmtSta|=0X10;					//标记上升沿已经被捕获		
-		}else //下降沿捕获
-		{			
-			
-			Dval=TIM3->CCR3;				//读取CCR3也可以清CC2IF标志位
-  			TIM3->CCER&=~(1<<9);			//CC3P=0	设置为上升沿捕获
- 			
-			if(RmtSta&0X10)					//完成一次高电平捕获 
+	if (tsr & (1 << 3))//CC3IE中断
+	{
+		if (RDATA)//上升沿捕获
+		{
+			TIM3->CCER |= 1 << 9; 				//CC3P=1	设置为下降沿捕获
+			TIM3->CNT = 0;					//清空定时器值
+			RmtSta |= 0X10;					//标记上升沿已经被捕获		
+		}
+		else //下降沿捕获
+		{
+
+			Dval = TIM3->CCR3;				//读取CCR3也可以清CC2IF标志位
+			TIM3->CCER &= ~(1 << 9);			//CC3P=0	设置为上升沿捕获
+
+			if (RmtSta & 0X10)					//完成一次高电平捕获 
 			{
- 				if(RmtSta&0X80)//接收到了引导码
+				if (RmtSta & 0X80)//接收到了引导码
 				{
-					
-					if(Dval>300&&Dval<800)			//560为标准值,560us
+
+					if (Dval > 300 && Dval < 800)			//560为标准值,560us
 					{
-						RmtRec<<=1;	//左移一位.
-						RmtRec|=0;	//接收到0	   
-					}else if(Dval>1400&&Dval<1800)	//1680为标准值,1680us
+						RmtRec <<= 1;	//左移一位.
+						RmtRec |= 0;	//接收到0	   
+					}
+					else if (Dval > 1400 && Dval < 1800)	//1680为标准值,1680us
 					{
-						RmtRec<<=1;	//左移一位.
-						RmtRec|=1;	//接收到1
-					}else if(Dval>2200&&Dval<2600)	//得到按键键值增加的信息 2500为标准值2.5ms
+						RmtRec <<= 1;	//左移一位.
+						RmtRec |= 1;	//接收到1
+					}
+					else if (Dval > 2200 && Dval < 2600)	//得到按键键值增加的信息 2500为标准值2.5ms
 					{
 						RmtCnt++; 		//按键次数增加1次
-						RmtSta&=0XF0;	//清空计时器		
+						RmtSta &= 0XF0;	//清空计时器		
 					}
- 				}else if(Dval>4200&&Dval<4700)		//4500为标准值4.5ms
+				}
+				else if (Dval > 4200 && Dval < 4700)		//4500为标准值4.5ms
 				{
-					RmtSta|=1<<7;	//标记成功接收到了引导码
-					RmtCnt=0;		//清除按键次数计数器
-				}						 
+					RmtSta |= 1 << 7;	//标记成功接收到了引导码
+					RmtCnt = 0;		//清除按键次数计数器
+				}
 			}
-			RmtSta&=~(1<<4);
-		}				 		     	    					   
-	}	
-   TIM3->SR=0;//清除中断标志位     
+			RmtSta &= ~(1 << 4);
+		}
+	}
+	//TIM3->SR = 0;//清除中断标志位   
 }
 
 //处理红外键盘
 //返回值:
 //	 0,没有任何按键按下
 //其他,按下的按键键值.
+/**
+ * @description: 用于处理中断中更新的数据，其他地方调用这个函数来获取按键值(可以重复调用这个函数来获取按键值)
+ * @return {*}
+ */
 u8 Remote_Scan(void)
-{        
-	u8 sta=0;       
-    u8 t1,t2;  
-	if(RmtSta&(1<<6))//得到一个按键的所有信息了
-	{ 
-	    t1=RmtRec>>24;			//得到地址码
-	    t2=(RmtRec>>16)&0xff;	//得到地址反码 
- 	    if((t1==(u8)~t2)&&t1==REMOTE_ID)//检验遥控识别码(ID)及地址 
-	    { 
-	        t1=RmtRec>>8;
-	        t2=RmtRec; 	
-	        if(t1==(u8)~t2)sta=t1;//键值正确	 
-		}   
-		if((sta==0)||((RmtSta&0X80)==0))//按键数据错误/遥控已经没有按下了
+{
+	u8 sta = 0;
+	u8 t1, t2;
+	if (RmtSta & (1 << 6))//得到一个按键的所有信息了
+	{
+		t1 = RmtRec >> 24;			//得到地址码
+		t2 = (RmtRec >> 16) & 0xff;	//得到地址反码 
+		if ((t1 == (u8)~t2) && t1 == REMOTE_ID)//检验遥控识别码(ID)及地址 
 		{
-		 	RmtSta&=~(1<<6);//清除接收到有效按键标识
-			RmtCnt=0;		//清除按键次数计数器
+			t1 = RmtRec >> 8;
+			t2 = RmtRec;
+			if (t1 == (u8)~t2)sta = t1;//键值正确	 
 		}
-	}  
-    return sta;
+		if ((sta == 0) || ((RmtSta & 0X80) == 0))//按键数据错误/遥控已经没有按下了
+		{
+			RmtSta &= ~(1 << 6);//清除接收到有效按键标识
+			RmtCnt = 0;		//清除按键次数计数器
+		}
+	}
+	return sta;
 }
 
- 
+/**
+ * @description: 用于处理按键值的函数，定时器中断周期性调用这个函数来处理按键值，并且根据按键值来控制LED和蜂鸣器(上面的Remote_Scan函数只是获取按键值，这个函数才是根据按键值来显示smg的函数)
+ * @return {*}
+ */
+void remote_smg_irq_func(void) {
+	u8 key = Remote_Scan();
+	static u8 t = 0;
+	t++;
+	if (t < TIMER_MS(&g_tim4, 10))	// 10ms 扫描一次按键值，避免没有按键值时频繁调用Remote_Scan函数导致的卡死
+	{
+		return;
+	}
+
+	if (key)
+	{
+		LED_SMG_Clear();
+		switch (key)
+		{
+			case KEY_1:        LED_SMG_WriteNum(7, 1); BEEP = 1; break;
+			case KEY_2:        LED_SMG_WriteNum(7, 2); BEEP = 1; break;
+			case KEY_3:        LED_SMG_WriteNum(7, 3); BEEP = 0; break;
+			case KEY_4:        LED_SMG_WriteNum(7, 4); BEEP = 0; break;
+			case KEY_5:        LED_SMG_WriteNum(7, 5); BEEP = 0; break;
+			case KEY_6:        LED_SMG_WriteNum(7, 6); BEEP = 0; break;
+			case KEY_7:        LED_SMG_WriteNum(7, 7); BEEP = 0; break;
+			case KEY_8:        LED_SMG_WriteNum(7, 8); BEEP = 0; break;
+			case KEY_9:        LED_SMG_WriteNum(7, 9); BEEP = 0; break;
+			case KEY_0:        LED_SMG_WriteNum(7, 0); BEEP = 0; break;
+			case KEY_DELETE:   LED_SMG_WriteSeg(7, 0x00); BEEP = 0; break;
+			case KEY_POWER:    LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 0); BEEP = 0; break;
+			case KEY_UP:       LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 1); BEEP = 0; break;
+			case KEY_ALIENTEK: LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 2); BEEP = 0; break;
+			case KEY_LEFT:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 3); BEEP = 0; break;
+			case KEY_PLAY:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 4); BEEP = 0; break;
+			case KEY_RIGHT:    LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 5); BEEP = 0; break;
+			case KEY_VOL_SUB:  BEEP = 1; break;
+			case KEY_DOWN:     LED_SMG_WriteNum(6, 1); LED_SMG_WriteNum(7, 7); BEEP = 0; break;
+			case KEY_VOL_ADD:  BEEP = 1; break;
+		}
+	}
+	else
+	{
+		BEEP = 1;
+	}
+	if (t >= TIMER_MS(&g_tim4, 250))
+	{
+		t = 0;
+		LED7 = !LED7;
+	}
+}
+

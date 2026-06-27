@@ -33,6 +33,9 @@ Flash and runtime verification are hardware-dependent. Confirm output over UART 
 ## Coding Style & Naming Conventions
 Follow the existing embedded C style: 4-space indentation in new code, braces on their own lines for functions, and short module-oriented filenames such as `led.c`, `rtc.h`, and `key_led_one.c`. Keep driver APIs in matching `.h/.c` pairs. Use `CamelCase` for vendor/library types already present, `snake_case` for local functions, and uppercase macros like `STM32F10X_HD`. Avoid editing generated Keil metadata unless the project configuration changes.
 
+## Comment Preservation
+Preserve useful comments when editing code. Useful comments include: explanations of non-obvious logic, hardware-specific notes (timing constraints, errata workarounds), API documentation, and section/group headers that aid navigation. You may remove comments that are outright wrong, commented-out dead code, or auto-generated boilerplate. When in doubt, keep the comment.
+
 ## Testing Guidelines
 There is no automated host-side test suite. Most checks are board-level smoke tests wired into `USER/main.c`, with helper headers under `IO/XinYue/` and `ulos/test/`. Add new tests as small callable functions, invoke them temporarily from `main()`, and verify expected UART logs or peripheral behavior on the STM32F103RC board.
 

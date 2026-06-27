@@ -15,15 +15,7 @@
 //All rights reserved									  
 ////////////////////////////////////////////////////////////////////////////////// 	  
 						    
-typedef enum
-{
-    KNONE,
-    K0,
-    K1,
-    K2,
-    kUP
-} _EVENT_TYPE;	 
-_EVENT_TYPE EXTI_Event;
+	 
 void EXTIX_Init(void);//外部中断初始化
 		 					    
 #endif

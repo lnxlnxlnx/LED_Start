@@ -1,81 +1,50 @@
-#if !defined(LOG_TAG)
-#define LOG_TAG                    "MAIN"
-#endif
-#undef LOG_LVL
-#if defined(MAIN_LOG_LVL)
-#define LOG_LVL                    MAIN_LOG_LVL
-#endif
-#include <elog.h>
+/**
+ * @file    main.c
+ * @brief   主程序 — 多功能秒表系统
+ *          考试要求: 数码管高精度秒表 + 按键控制 + 记次冻结 + LED指示 + 串口日志
+ */
 
 #include "sys.h"
+#include "delay.h"
+#include "usart.h"
+#include "led.h"
 #include "key_led_one.h"
 #include "project_log_config.h"
+#include "rtc.h"
 #include "dac.h"
-#include "test_vector.h"
-#include "test_quickSort.h"
-#include "test_compare_func.h"
-#include "tools.h"
-#include "beep.h"
-#include "OOP/oop_test.h"
-#include "test_multi_timer.h"
-#include "delay.h"
-
-#define u64 uint64_t
-static void esp32_uart_service(void)
-{
-    u16 sta;
-    u16 len;
-
-    sta = USART2_RX_STA;
-    if ((sta & 0x8000) == 0)
-    {
-        return;
-    }
-
-    len = sta & 0x3FFF;
-    USART2_RX_STA = 0;
-
-    uart2_send_buf((const u8 *)"STM32_ACK:", 10);
-    if (len > 0)
-    {
-        uart2_send_buf(USART2_RX_BUF, len);
-    }
-    uart2_send_buf((const u8 *)"\r\n", 2);
-
-    printf("[USART2 RX] len=%u\r\n", len);
-}
+#include "timer.h"
+#include "remote.h"
+#include "smg.h"
+#include "pwm.h"
+#include "adc.h"
+#include "dma.h"
+#include "stopwatch.h"   /* 多功能秒表 */
+#include "stm32f10x_usart.h"
+#include "stm32f10x_dma.h"
 
 int main(void)
 {
-    u64 now_ms;
-    u64 last_led_ms = 0;
-    u64 last_log_ms = 0;
-    u8 led_on = 0;
+    Stm32_Clock_Init(9);    // 系统时钟设置 72MHz
+    uart_init(115200);      // 串口初始化 (波特率 115200, 用于 printf + 秒表日志)
 
-    NVIC_Configuration();
-    debug_init();
-    _test_elog();
-    //test_xvector();
-    //test_arr_quicksort();
-    //test_xcompare();
-    oop_test_all();
+    /* ── 外设初始化 ── */
+    LED_Init();              // 初始化 PC0~PC7 LED (低电平亮)
+    LED_SMG_Init();          // ★ 数码管 GPIO 初始化 (必须先于定时器启动)
+    My_KEY_Init();           // 按键 GPIO 初始化 (PC8,PC9,PD2,PA0)
+    My_TIM3_Init(99, 72 - 1);   // TIM3 1ms 中断 (秒表计时 + 数码管扫描 + 按键消抖)
+    //EXTIX_Init();               // 禁用: 秒表在 TIM3 ISR 中处理按键, EXTI 会冲突
+
+    printf("NANO STM32 多功能秒表系统\r\n");
+    printf("KEY1: 启动/暂停  KEY2: 清零(暂停时)  WK_UP: 记次\r\n");
+
+    /* ── 秒表初始化 ── */
+    Stopwatch_Init();        // 清零, 数码管显示 00-00-00
+
+    printf("=== 就绪 ===\r\n");
 
     while (1)
     {
-        esp32_uart_service();
-
-        now_ms = delay_get_ms();
-        if ((now_ms - last_led_ms) >= 500)
-        {
-            last_led_ms = now_ms;
-            led_on = !led_on;
-            LED0 = led_on ? 0 : 1;
-        }
-
-        if ((now_ms - last_log_ms) >= 1000)
-        {
-            last_log_ms = now_ms;
-            log_d("current time: %llu\r\n", now_ms);
-        }
+        /* 所有工作在 TIM3 ISR (1ms) 中完成: 按键/计时/LED/数码管 */
+        delay_ms(20);
     }
 }

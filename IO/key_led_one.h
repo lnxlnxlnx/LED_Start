@@ -19,6 +19,12 @@ typedef enum
     STOP
 } STATE_TYPE;
 
+typedef enum{
+    NORMAL,
+    BLINK,
+    CIRCLE2
+} LED_BEEP_MODE;
+
 /***************************************
 2.列出所有的事件
 ***************************************/
@@ -40,11 +46,18 @@ typedef struct
     EVENT_TYPE event; // 当前事件
 } STATE_MACHINE;
 
+typedef struct
+{
+    LED_BEEP_MODE mode;
+    EVENT_TYPE event;    
+} LED_BEEP_MACHINE;
+
 // 全局结构体声明
 extern STATE_MACHINE state_machine;
-
+extern LED_BEEP_MACHINE led_beep_machine;
 // 函数声明（仅声明，实现移到key_led_one.c）
-void key_led_one_loop(u8 ctrl_loop);
+void key_led_one_loop(void);
+void led_beep_loop(void);
 
 #endif /* C0739F6A_3FF0_481F_9DE9_B26FBAB8C1CB */
 

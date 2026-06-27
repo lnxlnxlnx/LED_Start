@@ -1,155 +1,346 @@
+/**
+ * @file    timer.c
+ * @brief   定时器驱动
+ */
+
 #include "timer.h"
 #include "led.h"
+#include "beep.h"
 #include "ul_thread.h"
 #include "smg.h"
+#include "elog.h"
+#include "remote.h"
+#include "stopwatch.h"
+#include <stdint.h>
 
-//////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//ALIENTEK NANO STM32开发板
-//通用定时器 驱动代码	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//修改日期:2018/3/27
-//版本：V1.0
-//版权所有，盗版必究。
-//Copyright(C) 广州市星翼电子科技有限公司 2018-2028
-//All rights reserved									  
-//////////////////////////////////////////////////////////////////////////////////     
- 
+TIMER_TypeDef g_tim1 = {0};
+TIMER_TypeDef g_tim2 = {0};
+TIMER_TypeDef g_tim3 = {0};
+TIMER_TypeDef g_tim4 = {0};
+TIMER_TypeDef g_tim5 = {0};
+TIMER_TypeDef g_tim6 = {0};
+TIMER_TypeDef g_tim7 = {0};
+TIMER_TypeDef g_tim8 = {0};
 
-//通用定时器中断初始化
-//这里时钟选择为APB1的2倍，而APB1为36M
-//arr：自动重装值。
-//psc：时钟预分频数
-//这里使用的是定时器3!
-//APB1	36MHz	TIM3、TIM6、TIM7
-//APB2	72MHz	TIM1、TIM8
-void TIM3_Init(u16 arr,u16 psc)
+// 底层拼接，不展开参数
+#define _TIMER_SET_CLOCK(x, arr, psc)              \
+    do                                             \
+    {                                              \
+        g_tim##x.arr = arr;                        \
+        g_tim##x.psc = psc;                        \
+        g_tim##x.tick_us = calc_tick_us(arr, psc); \
+        g_tim##x.tick = 0;                         \
+    } while (0)
+
+// 外层中转，先展开 x、arr、psc 再拼接
+#define TIMER_SET_CLOCK(x, arr, psc) _TIMER_SET_CLOCK(x, arr, psc) // 这样写的好处是，调用时传入的 arr、psc 可以是表达式，而不是单纯的数值常量。又或者x是TIM_NUM这种宏定义，那就会先展开成具体的数字，再进行内层宏的拼接。
+
+static u32 calc_tick_us(u16 arr, u16 psc)
 {
-    RCC->APB1ENR|=1<<1;	//TIM3时钟使能    
- 	TIM3->ARR=arr;  	//设定计数器自动重装值 
-	TIM3->PSC=psc;  	//预分频器设置
-	TIM3->DIER|=1<<0;   //允许更新中断				
-	TIM3->CR1|=0x01;    //使能定时器3
-  	MY_NVIC_Init(0,3,TIM3_IRQn,2);//抢占0，子优先级3，组2		
-							 
+    return (u32)(arr + 1) * (psc + 1) / 72;
 }
 
-void TIM6_Init(u16 arr,u16 psc)
+void TIM3_Init(u16 arr, u16 psc)
 {
-    RCC->APB1ENR|=1<<4;	//TIM6时钟使能    
- 	TIM6->ARR=arr;  	//设定计数器自动重装值 
-	TIM6->PSC=psc;  	//预分频器设置
-	TIM6->DIER|=1<<0;   //允许更新中断		
-	TIM6->CR1|=0x01;	
-	MY_NVIC_Init(0,3,TIM6_IRQn,2);//抢占0，子优先级3，组2	
-	//这里应该是TIM6_DAC_IRQn
+    RCC->APB1ENR |= 1 << 1; // TIM3 时钟使能
+    TIM3->ARR = arr;
+    TIM3->PSC = psc;
+    TIM3->DIER |= 1 << 0; // 允许更新中断
+    TIM3->CR1 |= 0x01;    // 使能定时器
+    MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+
+    TIMER_SetTim3Clock(arr, psc); // 初始化 g_tim3 时间基准参数
 }
 
-void TIM7_Init(u16 arr,u16 psc)
+static void NVIC_TIM3_Init(void)
 {
-    RCC->APB1ENR|=1<<5;	//TIM7时钟使能    
- 	TIM7->ARR=arr;  	//设定计数器自动重装值 
-	TIM7->PSC=psc;  	//预分频器设置
-	TIM7->DIER|=1<<0;   //允许更新中断		
-	TIM7->CR1|=0x01;
-	MY_NVIC_Init(0,3,TIM7_IRQn,2);//抢占0，子优先级3，组2		
+    // MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+    NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+
+    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn; // 这几个NVIC结构体的成员都是uint8_t类型的，所以直接赋值就行了，不需要强制类型转换。
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
-
-
-
-//
-void TIM6_IRQHandler(void) //TIM6中断
+void My_TIM3_Init(u16 arr, u16 psc)
 {
-	if(TIM6->SR&0X0001)//溢出中断
-	{
-		ul_tick_increase();
-	}				   
-	TIM6->SR&=~(1<<0);//清除中断标志位 
+    // TIM3_Init(TIM3_ONE_SECOND_COUNT, 72 - 1);
+    // 1. 配置时基结构体
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); // 开启TIM3时钟
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; // 只给滤波、死区用，不影响定时器计数器计数速度。
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseStructure.TIM_Period = arr;
+    TIM_TimeBaseStructure.TIM_Prescaler = psc;
+    TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+    TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+
+    // 2. 配置中断
+    TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
+
+    // 3. 配置NVIC--中断管理
+    // MY_NVIC_Init(0, 3, TIM3_IRQn, 2);
+    NVIC_TIM3_Init();
+
+    // 4. 启动定时器
+    TIM_Cmd(TIM3, ENABLE);
+
+    // 5. 初始化 g_tim3 时间基准参数
+    // TIMER_SetTim3Clock(arr, psc);  // 初始化 g_tim3 时间基准参数
+    TIMER_SET_CLOCK(3, arr, psc); // 使用宏简化代码
 }
 
-void TIM7_IRQHandler(void) //TIM7中断
+void My_TIM3_PWM_Init(u16 arr, u16 psc)
 {
-	if(TIM7->SR&0X0001)//溢出中断
-	{
-		ul_tick_increase();
-	}				   
-	TIM7->SR&=~(1<<0);//清除中断标志位 
+    My_TIM3_Init(arr, psc);
+    GPIO_InitTypeDef GPIO_InitStructure;
+    // 1.  配置 GPIOC 时钟和 PC6 复用推挽输出
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO, ENABLE);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; // 复用推挽
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+    // 2. 配置 TIM3 的 PWM 模式
+    TIM_OCInitTypeDef TIM_OCInitStructure;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;             // PWM 模式 1
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; // 使能输出
+    TIM_OCInitStructure.TIM_Pulse = 0;                            // 初始占空比为
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;      // 输出极性低
+    TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+    TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable); // 使能预装载寄存器，更新事件时才会把 CCR1 的值加载到比较寄存器中，这样就不会出现占空比设置后立即生效导致的毛刺问题。
+
+    // TIMER_SET_CLOCK(3, arr, psc);  // 使用宏简化代码
 }
 
-//定时器2通道1输入捕获配置
-void TIM2_Cap_Init(u16 arr,u16 psc)
-{	 
-	RCC->APB1ENR|=1<<0;   	//TIM2 时钟使能 
-	RCC->APB2ENR|=1<<2;    	//使能PORTA时钟  
-	 
-	GPIOA->CRL&=0XFFFFFFF0;	//PA0 清除之前设置  
-	GPIOA->CRL|=0X00000008;	//PA0 输入   
-	GPIOA->ODR|=0<<0;		//PA0 下拉
-	  
- 	TIM2->ARR=arr;  		//设定计数器自动重装值   
-	TIM2->PSC=psc;  		//预分频器 
+void TIM4_Init(u16 arr, u16 psc)
+{
+    RCC->APB1ENR |= 1 << 2; // TIM4 时钟使能
+    TIM4->ARR = arr;
+    TIM4->PSC = psc;
+    TIM4->DIER |= 1 << 0;
+    TIM4->CR1 |= 0x01;
+    MY_NVIC_Init(0, 3, TIM4_IRQn, 2);
 
-	TIM2->CCMR1|=1<<0;		//CC1S=01 	选择输入端 IC1映射到TI1上
- 	TIM2->CCMR1|=1<<4; 		//IC1F=0001 配置输入滤波器 以Fck_int采样，2个事件后有效
- 	TIM2->CCMR1|=0<<10; 	//IC2PS=00 	配置输入分频,不分频 
-
-	TIM2->CCER|=0<<1; 		//CC1P=0	上升沿捕获
-	TIM2->CCER|=1<<0; 		//CC1E=1 	允许捕获计数器的值到捕获寄存器中
-
-	TIM2->DIER|=1<<1;   	//允许捕获中断				
-	TIM2->DIER|=1<<0;   	//允许更新中断	
-	TIM2->CR1|=0x01;    	//使能定时器2
-	MY_NVIC_Init(2,0,TIM2_IRQn,2);//抢占2，子优先级0，组2
- 
+    TIMER_SET_CLOCK(4, arr, psc); // 使用宏简化代码
 }
 
-//捕获状态
-//[7]:0,没有成功的捕获;1,成功捕获到一次.
-//[6]:0,还没捕获到高电平;1,已经捕获到高电平了.
-//[5:0]:捕获高电平后溢出的次数
-u8  TIM2CH1_CAPTURE_STA=0;	//输入捕获状态		    				
-u16	TIM2CH1_CAPTURE_VAL;	//输入捕获值
-//定时器2中断服务程序	 
+void TIM6_Init(u16 arr, u16 psc)
+{
+    RCC->APB1ENR |= 1 << 4; // TIM6 时钟使能
+    TIM6->ARR = arr;
+    TIM6->PSC = psc;
+    TIM6->DIER |= 1 << 0;
+    TIM6->CR1 |= 0x01;
+    MY_NVIC_Init(0, 3, TIM6_IRQn, 2);
+    TIMER_SET_CLOCK(6, arr, psc); // 使用宏简化代码
+}
+
+void TIM7_Init(u16 arr, u16 psc)
+{
+    RCC->APB1ENR |= 1 << 5; // TIM7 时钟使能
+    TIM7->ARR = arr;
+    TIM7->PSC = psc;
+    TIM7->DIER |= 1 << 0;
+    TIM7->CR1 |= 0x01;
+    MY_NVIC_Init(0, 3, TIM7_IRQn, 2);
+}
+
+void TIM2_Cap_Init(u16 arr, u16 psc)
+{
+    RCC->APB1ENR |= 1 << 0; // TIM2 时钟使能
+    RCC->APB2ENR |= 1 << 2; // PORTA 时钟
+
+    GPIOA->CRL &= 0XFFFFFFF0;
+    GPIOA->CRL |= 0X00000008; // PA0 输入
+    GPIOA->ODR |= 0 << 0;     // PA0 下拉
+
+    TIM2->ARR = arr;
+    TIM2->PSC = psc;
+
+    TIM2->CCMR1 |= 1 << 0;  // CC1S=01  IC1 映射到 TI1
+    TIM2->CCMR1 |= 1 << 4;  // IC1F=0001 输入滤波器
+    TIM2->CCMR1 |= 0 << 10; // IC2PS=00  不分频
+
+    TIM2->CCER |= 0 << 1; // CC1P=0 上升沿捕获
+    TIM2->CCER |= 1 << 0; // CC1E=1  允许捕获
+
+    TIM2->DIER |= 1 << 1; // 允许捕获中断
+    TIM2->DIER |= 1 << 0; // 允许更新中断
+    TIM2->CR1 |= 0x01;    // 使能定时器
+    MY_NVIC_Init(2, 0, TIM2_IRQn, 2);
+}
+
+void TIMER_SetTim3Clock(u16 arr, u16 psc)
+{
+    g_tim3.arr = arr;
+    g_tim3.psc = psc;
+    g_tim3.tick_us = calc_tick_us(arr, psc);
+    g_tim3.tick = 0;
+}
+
+u32 TIMER_GetTick(TIMER_TypeDef *pt)
+{
+    return pt->tick;
+}
+
+u8 TIMER_IsElapsed(TIMER_TypeDef *pt, u32 last, u32 interval)
+{
+    return (TIMER_GetTick(pt) - last) >= interval;
+}
+
+u8 TIM2CH1_CAPTURE_STA = 0;
+u16 TIM2CH1_CAPTURE_VAL;
+uint16_t TIM2_SIG_HIGH_TIME = 0;
+
 void TIM2_IRQHandler(void)
-{ 		    
-	u16 tsr;
-	tsr=TIM2->SR;
- 	if((TIM2CH1_CAPTURE_STA&0X80)==0)//还未成功捕获	
-	{
-		if(tsr&0X01)//溢出
-		{	    
-			if(TIM2CH1_CAPTURE_STA&0X40)//已经捕获到高电平了
-			{
-				if((TIM2CH1_CAPTURE_STA&0X3F)==0X3F)//高电平太长了
-				{
-					TIM2CH1_CAPTURE_STA|=0X80;//标记成功捕获了一次
-					TIM2CH1_CAPTURE_VAL=0XFFFF;
-				}else TIM2CH1_CAPTURE_STA++;
-			}	 
-		}
-		if(tsr&0x02)//捕获1发生捕获事件
-		{	
-			if(TIM2CH1_CAPTURE_STA&0X40)		//捕获到一个下降沿 		
-			{	  			
-				TIM2CH1_CAPTURE_STA|=0X80;		//标记成功捕获到一次高电平脉宽
-			    TIM2CH1_CAPTURE_VAL=TIM2->CCR1;	//获取当前的捕获值.
-	 			TIM2->CCER&=~(1<<1);			//CC1P=0 设置为上升沿捕获
-			}else  								//还未开始,第一次捕获上升沿
-			{ 
-				TIM2CH1_CAPTURE_VAL=0;
-				TIM2CH1_CAPTURE_STA=0X40;		//标记捕获到了上升沿
-				TIM2->CNT=0;					//计数器清空
-				TIM2->CCER|=1<<1; 				//CC1P=1 设置为下降沿捕获 
-			}		    
-		}			     	    					   
- 	}
-	TIM2->SR=0;//清除中断标志位 	    
+{
+    u16 tsr;
+    tsr = TIM2->SR;
+    if ((TIM2CH1_CAPTURE_STA & 0X80) == 0)
+    {
+        if (tsr & 0X01)
+        {
+            if (TIM2CH1_CAPTURE_STA & 0X40)
+            {
+                if ((TIM2CH1_CAPTURE_STA & 0X3F) == 0X3F)
+                {
+                    TIM2CH1_CAPTURE_STA |= 0X80;
+                    TIM2CH1_CAPTURE_VAL = 0XFFFF;
+                }
+                else
+                    TIM2CH1_CAPTURE_STA++;
+            }
+        }
+        if (tsr & 0x02)
+        {
+            if (TIM2CH1_CAPTURE_STA & 0X40)
+            {
+                TIM2CH1_CAPTURE_STA |= 0X80;
+                TIM2CH1_CAPTURE_VAL = TIM2->CCR1;
+                TIM2->CCER &= ~(1 << 1);
+            }
+            else
+            {
+                TIM2CH1_CAPTURE_VAL = 0;
+                TIM2CH1_CAPTURE_STA = 0X40;
+                TIM2->CNT = 0;
+                TIM2->CCER |= 1 << 1;
+            }
+        }
+    }
+    TIM2->SR = 0;
 }
 
+void TIM2_Input_Capture_Update(void)
+{
+    static uint32_t temp = 0;
+    static uint8_t t = 0;
+    t++;
+    if (t >= TIMER_MS(&g_tim3, 190))
+    {
+        t = 0;
+        LED0 = !LED0;
+    }
+    if (TIM2CH1_CAPTURE_STA & 0X80)
+    {
+        temp = TIM2CH1_CAPTURE_STA & 0X3F;
+        temp *= 65536;
+        temp += TIM2CH1_CAPTURE_VAL;
+        TIM2_SIG_HIGH_TIME = temp / 1000;
+        printf("HIGH:%d us , %d ms\r\n", temp, TIM2_SIG_HIGH_TIME);
+        TIM2CH1_CAPTURE_STA = 0;
+    }
+}
 
+// ── TIM3 ─────────────────────────────────────────────
 
+extern void remote_irq_func(void);
+extern void led_irq_func(void);
+extern void adc_irq_func(TIMER_TypeDef *callback_timer);
+extern void led_pwm_func(void);
 
+#define USE_LED 0 /* 停止watch 有自己的 LED 控制, 禁用旧版 led_irq_func */
+#define USE_PWM_TEST 0
+#define USE_IC_UPDATE 0 /* 停止watch 有自己的 LED 控制, 禁用旧版 TIM2 测试 */
+#define USE_ADC_REF 0
+#define USE_REMOTE 0
+#define USE_USART_REFLECT 1
+#include "usart.h"
+// extern u8  USART_RX_BUF[USART_REC_LEN]; //接收缓冲,最大USART_REC_LEN个字节.末字节为换行符
+// extern u16 USART_RX_STA;         		//接收状态标记
+void TIM3_IRQHandler(void)
+{
+    if (TIM3->SR & 0X01)
+    {
+        g_tim3.tick++;
 
+        /* ── 数码管动态扫描 (每 1ms 扫一位, 交替消影) ── */
+        LED_SMG_Scan();
 
+        /* ── 秒表 Tick (厘秒累加 / 冻结倒计时 / LED 控制) ── */
+        Stopwatch_TimerTick();
+#if USE_USART_REFLECT
+        // // 串口反射测试  // 没有效果
+        // static u16 len = 0;
+        // static u32 rx_time_tick = 0;
+        // rx_time_tick++;
+        // if (rx_time_tick >= TIMER_MS(&g_tim3, 500))
+        // {
+        //     printf("test\r\n");
+        //     rx_time_tick = 0;
+        //     if (USART_RX_STA & 0x8000)
+        //     {
+        //         len = USART_RX_STA & 0x3fff;
+        //         printf("\r\n您发送的消息为:\r\n\r\n");
 
+        //         for (u8 t = 0; t < len; t++)
+        //         {
+        //             USART1->DR = USART_RX_BUF[t];
+        //             while ((USART1->SR & 0X40) == 0)
+        //                 ;
+        //         }
+
+        //         printf("\r\n\r\n");
+        //         USART_RX_STA = 0;
+        //     }
+        // }
+#endif
+
+#if USE_REMOTE
+        remote_irq_func();
+#endif
+#if USE_LED
+        led_irq_func();
+#endif
+#if USE_PWM_TEST
+        led_pwm_func(); // 需调用pwm.h下的初始化函数来配置TIM3为PWM模式，才能使用这个函数来实现LED的PWM调光功能
+#endif
+#if USE_IC_UPDATE
+        TIM2_Input_Capture_Update(); // 需调用TIM2_Cap_Init()来初始化TIM2，才能使用这个函数
+#endif
+#if USE_ADC_REF
+        adc_irq_func(NULL); // 使用默认的 g_tim3 作为时间基准
+#endif
+    }
+    TIM3->SR = 0;
+}
+
+extern u16 TIM3_ONE_SECOND_COUNT;
+
+// ── TIM4 ─────────────────────────────────────────────
+void TIM4_IRQHandler(void)
+{
+    if (TIM4->SR & 0X0001)
+    {
+        g_tim4.tick++;
+        // adc_irq_func(&g_tim4);
+    }
+    TIM4->SR &= ~(1 << 0);
+}
+
+#ifdef USE_REMOTE
+#undef USE_REMOTE
+#endif

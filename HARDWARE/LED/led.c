@@ -1,14 +1,19 @@
 #include "led.h"
 #include "delay.h"
+#include "timer.h"
 #include "project_log_config.h"
 #if !defined(LOG_TAG)
-    #define LOG_TAG                    "LED"
+#define LOG_TAG                    "LED"
 #endif
 #undef LOG_LVL
 #if defined(LED_LOG_LVL)
-    #define LOG_LVL                    LED_LOG_LVL
+#define LOG_LVL                    LED_LOG_LVL
 #endif
 #include <elog.h>
+#include "stm32f10x_tim.h"
+
+uint16_t TIM3_ONE_SECOND_COUNT = 1000; // 假设 TIM3 是 1ms 中断一次，则为1000，如果是 10ms 中断一次，则为100，依此类推
+//#include "stm32f10x_rcc.h"
 
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -33,19 +38,19 @@ void LED_Init(void)
 
     // 配置 PC0~PC7 为 推挽输出、50MHz
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 |
-                                  GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
+        GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;    // 速度50MHz
     GPIO_Init(GPIOC, &GPIO_InitStructure);               // 初始化 GPIOC
 
     // PC0~PC7 全部输出高电平（和你原来的 ODR 效果一致）
     GPIO_SetBits(GPIOC, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 |
-                   GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
-                //    log_e("LED_Init", "LED_Init OK");
-                //    log_w("LED_Init", "LED_Init OK");
-                //    log_i("LED_Init", "LED_Init OK");
+        GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7);
+    log_e("LED_Init", "LED_Init OK");
+    log_w("LED_Init", "LED_Init OK");
+    log_i("LED_Init", "LED_Init OK");
 }
-void led0_operate(uint8_t val) { LED0 = val; }  //DEPRECATED:其实可以用宏拼接?
+void led0_operate(uint8_t val) { LED0 = val; }
 void led1_operate(uint8_t val) { LED1 = val; }
 void led2_operate(uint8_t val) { LED2 = val; }
 void led3_operate(uint8_t val) { LED3 = val; }
@@ -54,10 +59,12 @@ void led5_operate(uint8_t val) { LED5 = val; }
 void led6_operate(uint8_t val) { LED6 = val; }
 void led7_operate(uint8_t val) { LED7 = val; }
 
-LED_Operate led_funcs[] = {//DEPRECATED:其实可以用宏拼接?
+LED_Operate led_funcs[] = {
     led0_operate, led1_operate, led2_operate, led3_operate,
     led4_operate, led5_operate, led6_operate, led7_operate
 };
+
+volatile unsigned long* led_states[] = { &LED0, &LED1, &LED2, &LED3, &LED4, &LED5, &LED6, &LED7 }; // 初始化 LED 状态为全灭
 /* 测试用循环控制函数 */
 void led_loop_control(void)
 {
@@ -74,5 +81,51 @@ void led_loop_control(void)
     for (i = 0; i < 8; i++)
         led_funcs[i](1);
 }
- 
 
+// 1秒计时用全局变量
+static uint16_t tim3_count = 0;
+void led_irq_func(void) {
+    // 标准库判断更新中断
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+    {
+        //NOTE:method 2: 1秒翻转LED
+        // 假设 TIM3 是 1ms 中断一次，则下面为1000，如果是 10ms 中断一次，则下面为100，依此类推
+        tim3_count++;
+        if (tim3_count >= TIMER_MS(&g_tim3, TIM3_ONE_SECOND_COUNT))
+        {
+            tim3_count = 0;
+            LED5 = !LED5;   // 1秒翻转LED
+        }
+    }
+}
+#include "pwm.h"
+
+// 先使用pwm中的init函数来初始化TIM3，然后在这个函数中实现LED的PWM调光功能
+void led_pwm_func(void) {
+    // 这里可以实现 LED 的 PWM 调光功能，具体实现取决于你的硬件连接和需求
+    static uint16_t tim3_count_10ms = 0;
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+    {
+        tim3_count_10ms++;
+        if (tim3_count_10ms >= TIMER_MS(&g_tim3, 10))
+        {
+            tim3_count_10ms = 0;
+            static uint8_t brightness = 0;
+            static uint8_t brightness_2 = 50; // 第二个 LED 的亮度初始值
+            static int8_t direction = 1; // 亮度变化方向，1为增加，-1为减少
+            static int8_t direction_2 = 1; // 亮度变化方向，1为增加，-1为减少
+
+            brightness += direction;
+            brightness_2 += direction_2;
+
+            if (brightness == 0 || brightness == 100) {
+                direction = -direction; // 到达边界时改变方向
+            }
+            if (brightness_2 == 0 || brightness_2 == 100) {
+                direction_2 = -direction_2; // 到达边界时改变方向
+            }
+            TIM3_Set_PWM_Duty(brightness, brightness_2); // 设置 TIM3 的 PWM 占空比，控制 LED 亮度
+        }
+    }
+    // 例如，可以使用 TIM3 的 PWM 模式来控制 LED 的亮度
+}
