@@ -131,33 +131,35 @@ void USART1_IRQHandler(void) // 串口1中断服务程序
 	}
 	/* ── 其他错误标志 (FE/NE/PE) 不清除也不影响 RXNE ── */
 
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须是0x0d 0x0a结尾)
+	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断
 	{
-		Res = USART_ReceiveData(USART1); //(USART1->DR);	//读取接收到的数据
-		// 这一行读取 DR，硬件直接把 RXNE 中断标志清掉，所以省略清除函数完全合法。
+		Res = USART_ReceiveData(USART1);
 
 		if ((USART_RX_STA & 0x8000) == 0) // 接收未完成
 		{
-			if (USART_RX_STA & 0x4000) // 接收到了0x0d
+			if (USART_RX_STA & 0x4000) // 接收到了0x0d (\r)
 			{
-				if (Res != 0x0a)
-					USART_RX_STA = 0; // 接收错误,重新开始
-				else
-					USART_RX_STA |= 0x8000; // 接收完成了
+				if (Res == 0x0a)         // \n 补全 \r\n
+					USART_RX_STA |= 0x8000;
+				else                     // 其他字符 → 错误, 重新开始
+					USART_RX_STA = 0;
 			}
-			else // 还没收到0X0D
+			else // 还没收到 \r
 			{
-				if (Res == 0x0d)
+				if (Res == 0x0d)              // 收到 \r, 等待 \n
 					USART_RX_STA |= 0x4000;
+				else if (Res == 0x0a)         // 单独 \n → 兼容纯 \n 终端
+					USART_RX_STA |= 0x8000;
 				else
 				{
 					USART_RX_BUF[USART_RX_STA & 0X3FFF] = Res;
 					USART_RX_STA++;
 					if (USART_RX_STA > (USART_REC_LEN - 1))
-						USART_RX_STA = 0; // 接收数据错误,重新开始接收
+						USART_RX_STA = 0;
 				}
 			}
 		}
+		printf("%c", Res); // 回显
 	}
 #ifdef OS_TICKS_PER_SEC // 如果时钟节拍数定义了,说明要使用ucosII了.
 	OSIntExit();
