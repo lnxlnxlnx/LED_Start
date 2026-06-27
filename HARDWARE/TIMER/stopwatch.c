@@ -31,6 +31,19 @@
 #include "dma.h"
 #include "usart.h"
 
+/* ── 外部引用 (main.c 的 SendBuff, dma.c 的传输长度, usart.c 的环形缓冲) ── */
+extern u8  SendBuff[];
+extern u16 DMA1_MEM_LEN;
+extern volatile u8  g_rx_ring[];
+extern volatile u16 g_rx_ring_wr;
+extern volatile u16 g_rx_ring_rd;
+extern volatile u8  g_rx_ring_has_data;
+
+/* ── 持久保存最后一次从 PC 收到的数据 (重复按 KEY0 都发同样的内容) ── */
+static u8  g_last_rx[USART_REC_LEN];
+static u16 g_last_rx_len = 0;
+static u8  g_has_saved = 0;
+
 /* ======================== 调试开关 ======================== */
 #define STOPWATCH_DEBUG    1       // 1=串口输出状态变化, 0=关闭
 
@@ -139,7 +152,7 @@ void Stopwatch_Init(void)
  * @note  所有时间间隔通过 TIMER_MS() 宏从 g_tim3.tick_us 计算,
  *        改变 TIM3 的 arr/psc 后, 这些间隔自动适配, 无需修改代码.
  */
-void Stopwatch_TimerTick(void)
+void Stopwatch_TimerTick(void)      // 统一进行按键的处理，相当于verilog中的计数器
 {
     static u16 ms_counter = 0;
 
@@ -158,13 +171,14 @@ void Stopwatch_TimerTick(void)
         g_freeze_timer++;
         if (g_freeze_timer >= g_freeze_limit) {
             g_freeze_timer = 0;
-            sw_SetState(SW_RUNNING);
+            sw_SetState(SW_RUNNING);        // 恢复运行，状态机
             sw_UpdateDisplay();
         }
     }
 
     /* ── 4. LED 控制 (每 1ms) ── */
     sw_UpdateLEDs();
+
 }
 
 Stopwatch_State Stopwatch_GetState(void) { return g_state; }
@@ -262,7 +276,7 @@ static void sw_UpdateLEDs(void)
 }
 
 /* ---------- 按键消抖 + 处理 (每 1ms) ---------- */
-static void sw_ReadKeys(void)
+static void sw_ReadKeys(void)       // 统一进行按键的处理
 {
     u8 raw[KEY_COUNT];
     u8 i;
@@ -309,34 +323,70 @@ static void sw_ReadKeys(void)
  * KEY2:  暂停/停止→清零 (防误触)
  * WK_UP: 运行中→记次冻结
  */
-static void sw_ProcessKey(u8 idx)
+static void sw_ProcessKey(u8 idx)       // 根据处理好的按键索引执行动作(好比上面是按键的时序逻辑，这里是功能更新的组合逻辑---状态机的三段式)
 {
     switch (idx) {
     case K_IDX_KEY0:
-    //#if USE_DMA_USART
-            printf("\r\nDMA DATA:\r\n ");
-            USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE); //使能串口1的DMA发送
-            MY_DMA_Enable(DMA1_Channel4);//开始一次DMA传输！
+    {
+        u16 save_len = DMA1_MEM_LEN;
+        u16 tx_len = 0;
+        u8  from_ring = 0;
 
-            //等待DMA传输完成，此时我们来做另外一些事，点灯
-            //实际应用中，传输数据期间，可以执行另外的任务
-            while (1)
+        /* ── 看看环形缓冲有没有新数据 ── */
+        __disable_irq();
+        if (g_rx_ring_has_data)
+        {
+            u16 cnt = 0;
+            while (g_rx_ring_rd != g_rx_ring_wr && cnt < USART_REC_LEN)
             {
-                if (DMA_GetFlagStatus(DMA1_FLAG_TC4) == SET) //等待通道4传输完成
-                {
-                    DMA_ClearFlag(DMA1_FLAG_TC4); //清除通道4传输完成标志
-                    break;
-                }
-
-                LED2 = !LED2;
-                delay_ms(50);
+                g_last_rx[cnt++] = g_rx_ring[g_rx_ring_rd];
+                g_rx_ring_rd = (g_rx_ring_rd + 1) & (RX_RING_LEN - 1);
             }
+            if (g_rx_ring_rd == g_rx_ring_wr)
+                g_rx_ring_has_data = 0;
+            if (cnt > 0)
+            {
+                g_last_rx_len = cnt;
+                g_has_saved = 1;
+                from_ring = 1;
+            }
+        }
+        __enable_irq();
 
-            LED2 = 1;
-            printf("Transimit Finished!\r\n");//提示传送完成
-        /* 暂时未定义功能 */
-    //#endif
+        /* ── 决定发什么 ── */
+        if (g_has_saved)
+        {
+            u16 i;
+            tx_len = g_last_rx_len;
+            for (i = 0; i < tx_len; i++)
+                SendBuff[i] = g_last_rx[i];
+            DMA1_MEM_LEN = tx_len;
+            printf("\r\nRX DATA(%u):\r\n", tx_len);
+        }
+        else
+        {
+            printf("\r\nDMA DATA:\r\n ");
+        }
+
+        USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+        MY_DMA_Enable(DMA1_Channel4);
+
+        while (1)
+        {
+            if (DMA_GetFlagStatus(DMA1_FLAG_TC4) == SET)
+            {
+                DMA_ClearFlag(DMA1_FLAG_TC4);
+                break;
+            }
+            LED2 = !LED2;
+            delay_ms(50);
+        }
+
+        DMA1_MEM_LEN = save_len;
+        LED2 = 1;
+        printf("Transimit Finished!\r\n");
         break;
+    }
 
     case K_IDX_KEY1:
         if (g_state == SW_RUNNING) {

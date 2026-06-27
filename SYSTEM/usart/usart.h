@@ -17,7 +17,14 @@
 	  	
 extern volatile u8  USART_RX_BUF[USART_REC_LEN]; //接收缓冲,最大USART_REC_LEN个字节.末字节为换行符 
 extern volatile u16 USART_RX_STA;         		//接收状态标记	
-//如果想串口中断接收，请不要注释以下宏定义
+
+/* ── 简单环形接收缓冲 (绕过 USART_RX_STA 协议) ── */
+#define RX_RING_LEN  256
+extern volatile u8  g_rx_ring[RX_RING_LEN];
+extern volatile u16 g_rx_ring_wr;       // 写入位置 (ISR 中递增)
+extern volatile u16 g_rx_ring_rd;       // 读取位置 (主循环中递增)
+extern volatile u8  g_rx_ring_has_data; // 是否有新数据
+
 void uart_init(u32 bound);
 #endif
 

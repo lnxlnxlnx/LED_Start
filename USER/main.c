@@ -24,6 +24,7 @@
 const u8 TEXT_TO_SEND[] = {"ALIENTEK NANO STM32 DMA 串口实验"};
 #define TEXT_LENTH sizeof(TEXT_TO_SEND) - 1 // TEXT_TO_SEND字符串长度(不包含结束符)
 u8 SendBuff[(TEXT_LENTH + 2) * 100];
+
 int main(void)
 {
     Stm32_Clock_Init(9); // 系统时钟设置 72MHz
@@ -37,7 +38,7 @@ int main(void)
     My_ADC_Init();
     MY_DMA_Config(DMA1_Channel4, (u32)&USART1->DR, (u32)SendBuff, (TEXT_LENTH + 2) * 100); // DMA1通道4,外设为串口1,存储器为SendBuff,长(TEXT_LENTH+2)*100.
     My_TIM3_Init(99, 72 - 1);                                                              // TIM3 1ms 中断 (秒表计时 + 数码管扫描 + 按键消抖)
-                                                                                           // EXTIX_Init();               // 禁用: 秒表在 TIM3 ISR 中处理按键, EXTI 会冲突
+                                                                                            // EXTIX_Init();               // 禁用: 秒表在 TIM3 ISR 中处理按键, EXTI 会冲突
     u8 t = 0;
     for (u16 i = 0; i < (TEXT_LENTH + 2) * 100; i++)                                           // 填充ASCII字符集数据
     {
@@ -62,7 +63,6 @@ int main(void)
 
     while (1)
     {
-        /* 所有工作在 TIM3 ISR (1ms) 中完成: 按键/计时/LED/数码管 */
         delay_ms(20);
     }
 }
