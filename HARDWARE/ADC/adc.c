@@ -39,6 +39,8 @@ void My_ADC_Init(void)
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	// 3. 配置预分频器和采样时间
+	RCC_ADCCLKConfig(RCC_PCLK2_Div2);
+
 	ADC_InitStructure.ADC_Mode = ADC_Mode_Independent; // 独立模式
 	ADC_InitStructure.ADC_ScanConvMode = DISABLE;
 	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE; // 单次转换模式
@@ -48,7 +50,7 @@ void My_ADC_Init(void)
 	ADC_Init(ADC1, &ADC_InitStructure);
 
 	// 4. 配置通道9的采样时间
-	ADC_RegularChannelConfig(ADC1, ADC_CH9, 1, ADC_SampleTime_239Cycles5); // 通道9，采样时间239.5周期
+	ADC_RegularChannelConfig(ADC1, ADC_Channel_9, 1, ADC_SampleTime_239Cycles5); // 通道9，采样时间239.5周期
 
 	// 5. 开启ADC
 	ADC_Cmd(ADC1, ENABLE);
@@ -107,6 +109,22 @@ void  Adc_Init(void)
 //ch:通道值0~13
 //返回值：转换结果	// ADC 轮询模式，调用该函数会阻塞直到转换完成，适合单次或者简单数据采样，可以优化为 DMA 模式或者中断模式以实现更高效的数据采集
 //ADC1_2_IRQHandler可以重写这个
+
+// 获取ADC1指定通道单次转换结果
+u16 My_Get_Adc(u8 ch)
+{
+    // 配置规则序列1：目标通道ch，采样时间239.5周期（和初始化保持一致）
+    ADC_RegularChannelConfig(ADC1, ch, 1, ADC_SampleTime_239Cycles5);
+    
+    // 软件触发，启动一次转换
+    ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+    
+    // 循环等待转换完成（EOC标志置1）
+    while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));
+    
+    // 读取转换结果并返回，读DR会自动清除EOC标志
+    return ADC_GetConversionValue(ADC1);
+}
 u16 Get_Adc(u8 ch)   
 {
 	//设置转换序列	  		 
@@ -126,7 +144,8 @@ u16 Get_Adc_Average(u8 ch,u8 times)		//每调用一次Get_Adc差不多25us，tim
 	u8 t;
 	for(t=0;t<times;t++)
 	{
-		temp_val+=Get_Adc(ch);
+		//temp_val+=Get_Adc(ch);
+		temp_val+=My_Get_Adc(ch);
 	}
 	return temp_val/times;
 } 	 
