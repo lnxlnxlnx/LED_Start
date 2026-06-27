@@ -3,6 +3,7 @@
 #include "smg.h"
 #include "led.h"
 #include "timer.h"
+#include "stm32f10x_adc.h"
 #include <stddef.h>   // 定义 NULL
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
@@ -20,6 +21,45 @@
 //初始化ADC	
 //这里我们仅以规则通道为例
 //我们默认仅开启通道9	
+
+void My_ADC_Init(void)
+{
+	//Adc_Init(); // ADC初始化
+	// 这里可以添加定时器触发ADC转换的配置
+	// 例如使用TIM3每秒触发一次ADC转换
+	//TIM3_Init(7199, 9999); // 1Hz触发频率
+	// 1. 开启时钟
+	GPIO_InitTypeDef GPIO_InitStructure;
+	ADC_InitTypeDef ADC_InitStructure;
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_ADC1, ENABLE); // 使能GPIOB和ADC1时钟
+	
+	// 2.// 配置PB9为模拟输入
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	// 3. 配置预分频器和采样时间
+	ADC_InitStructure.ADC_Mode = ADC_Mode_Independent; // 独立模式
+	ADC_InitStructure.ADC_ScanConvMode = DISABLE;
+	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE; // 单次转换模式
+	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStructure.ADC_NbrOfChannel = 1; // 仅转换一个通道
+	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None; // 软件触发
+	ADC_Init(ADC1, &ADC_InitStructure);
+
+	// 4. 配置通道9的采样时间
+	ADC_RegularChannelConfig(ADC1, ADC_CH9, 1, ADC_SampleTime_239Cycles5); // 通道9，采样时间239.5周期
+
+	// 5. 开启ADC
+	ADC_Cmd(ADC1, ENABLE);
+
+	// 6. 校准ADC
+	ADC_ResetCalibration(ADC1); // 复位校准
+	while (ADC_GetResetCalibrationStatus(ADC1)); // 等待复位校准完成
+
+	ADC_StartCalibration(ADC1); // 开始校准
+	while (ADC_GetCalibrationStatus(ADC1)); // 等待校准完成
+}
 void  Adc_Init(void)
 { 	
 	//先初始化IO口
@@ -51,8 +91,8 @@ void  Adc_Init(void)
 	ADC1->SQR1&=~(0XF<<20);
 	ADC1->SQR1|=0<<20;     //1个转换在规则序列中 也就是只转换规则序列1 			   
 	//设置通道9的采样时间
-	ADC1->SMPR2&=~(7<<3);  //通道9采样时间清空	  
- 	ADC1->SMPR2|=7<<3;     //通道9 239.5周期,提高采样时间可以提高精确度	 ，还要加上转换时间(转换+对齐、锁存)12.5周期总共252周期，ADC时钟12M，转换时间为252/12M=21us左右
+	ADC1->SMPR2&=~(7<<3); //通道9采样时间清空	  
+ 	ADC1->SMPR2|=7<<3;    //通道9 239.5周期,提高采样时间可以提高精确度	 ，还要加上转换时间(转换+对齐、锁存)12.5周期总共252周期，ADC时钟12M，转换时间为252/12M=21us左右
 
 	ADC1->CR2|=1<<0;	   //开启AD转换器	 
 	ADC1->CR2|=1<<3;       //使能复位校准  
@@ -113,7 +153,7 @@ void adc_irq_func(TIMER_TypeDef* callback_timer)
     {
         adc_t = 0;
         adcx = Get_Adc_Average(ADC_CH9, 3); // ADC原始值
-        //printf("ADC Value: %hu\r\n", adcx);
+        printf("ADC Value: %hu\r\n", adcx);
         LED_SMG_WriteValue(adcx, 0, 4);
         voltage = (float)adcx * (3.3 / 4096);  // ADC电压值
         adcx1 = voltage;
