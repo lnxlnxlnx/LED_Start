@@ -33,7 +33,11 @@ void EXTIX_Init(void)
 
 	MY_NVIC_Init(2,2,EXTI0_IRQn,2);    	//抢占2，子优先级2，组2
 	MY_NVIC_Init(2,1,EXTI9_5_IRQn,2);  	//抢占2，子优先级1，组2
-	MY_NVIC_Init(2,0,EXTI2_IRQn,2);  	//抢占2，子优先级0，组2	  
+	MY_NVIC_Init(2,0,EXTI2_IRQn,2);  	//抢占2，子优先级0，组2	
+	
+	My_Ex_NVIC_DeInit(0); // 禁用 EXTI0 中断
+	My_Ex_NVIC_DeInit(8); // 禁用 EXTI1 中断
+	My_Ex_NVIC_DeInit(2); // 禁用 EXTI2 中断
  
 } 
 extern EVENT_TYPE curent_event;

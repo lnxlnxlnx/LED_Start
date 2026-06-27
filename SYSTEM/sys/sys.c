@@ -105,18 +105,31 @@ void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM)
 //NVIC_SubPriority和NVIC_PreemptionPriority的原则是,数值越小,越优先	   
 void MY_NVIC_Init(u8 NVIC_PreemptionPriority,u8 NVIC_SubPriority,u8 NVIC_Channel,u8 NVIC_Group)	 
 { 
-	u32 temp;
-	SysTick_Config(SystemCoreClock/1000); // 1ms中断一次	
-	NVIC_PriorityGroupConfig(NVIC_Group);//设置分组
-	temp=NVIC_PreemptionPriority<<(4-NVIC_Group);	  
-	temp|=NVIC_SubPriority&(0x0f>>NVIC_Group);
-	temp&=0xf;//取低四位  
-	NVIC->ISER[NVIC_Channel/32]|=(1<<NVIC_Channel%32);//使能中断位(要清除的话,相反操作就OK) 
-	NVIC->IP[NVIC_Channel]|=temp<<4;//设置响应优先级和抢断优先级   	    	  				   
+    NVIC_InitTypeDef NVIC_InitStruct;
+
+    // 1. 设置全局中断分组（原NVIC_PriorityGroupConfig）
+	switch(NVIC_Group) {
+		case 0: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0); break; // 0位抢占优先级,4位响应优先级
+		case 1: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1); break; // 1位抢占优先级,3位响应优先级
+		case 2: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); break; // 2位抢占优先级,2位响应优先级
+		case 3: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3); break; // 3位抢占优先级,1位响应优先级
+		case 4: NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4); break; // 4位抢占优先级,0位响应优先级
+		default: return; // 错误的分组
+	}
+
+    // 2. SysTick配置1ms中断（原函数自带逻辑保留）
+    SysTick_Config(SystemCoreClock / 1000);
+
+    // 3. 填充NVIC结构体，标准库自动处理ISER、IP寄存器
+    NVIC_InitStruct.NVIC_IRQChannel = (IRQn_Type)NVIC_Channel;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = NVIC_PreemptionPriority;
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority = NVIC_SubPriority;
+    NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE; // 等价 NVIC->ISER |= 1<<ch
+    NVIC_Init(&NVIC_InitStruct);   	  				   
 }
 
 // 关闭单个 NVIC 中断通道（和 MY_NVIC_Init 反操作）
-void MY_NVIC_DeInit(u8 NVIC_Channel)
+void _NVIC_DeInit(u8 NVIC_Channel)
 {
     // 关闭中断使能
     NVIC->ICER[NVIC_Channel / 32] = 1 << (NVIC_Channel % 32);
@@ -129,6 +142,32 @@ void MY_NVIC_DeInit(u8 NVIC_Channel)
 }
 
 // 关闭指定 EXTI 中断线（比如 EXTI9_5 里的 EXTI8、EXTI9）
+void My_NVIC_DeInit(u8 NVIC_Channel){
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	// 1. 禁用对应的 NVIC 中断通道
+	NVIC_InitStructure.NVIC_IRQChannel = (IRQn_Type)NVIC_Channel;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	// 2. 清除中断标志位
+	NVIC_ClearPendingIRQ((IRQn_Type)NVIC_Channel);
+}
+
+// ban的时候不是看NVIC，而是上面Ex初始化的是哪个引脚就ban哪个8、9、2、0引脚就对应8、9、2、0的BITx
+void My_Ex_NVIC_DeInit(u8 BITx){
+    EXTI_InitTypeDef EXTI_InitStruct;
+
+    EXTI_InitStruct.EXTI_Line = (uint16_t)(1 << BITx);
+    EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+    EXTI_InitStruct.EXTI_LineCmd = DISABLE; // 关闭IMR屏蔽位
+    EXTI_Init(&EXTI_InitStruct);
+
+    // 清除EXTI挂起标志位
+    EXTI_ClearITPendingBit((uint16_t)(1 << BITx));
+}
+
 void Ex_NVIC_DeInit(u8 BITx)
 {
     // 关闭中断屏蔽

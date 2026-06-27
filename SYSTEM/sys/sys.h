@@ -99,6 +99,8 @@ void MY_NVIC_PriorityGroupConfig(u8 NVIC_Group);//设置NVIC分组
 void MY_NVIC_Init(u8 NVIC_PreemptionPriority,u8 NVIC_SubPriority,u8 NVIC_Channel,u8 NVIC_Group);//设置中断
 void Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIM);//外部中断配置函数(只对GPIOA~G)
 void My_Ex_NVIC_Config(u8 GPIOx,u8 BITx,u8 TRIGGER_MODE); //外部中断配置函数(只对GPIOA~G)
+void My_Ex_NVIC_DeInit(u8 BITx);
+void Ex_NVIC_DeInit(u8 BITx);
 void JTAG_Set(u8 mode);
 //////////////////////////////////////////////////////////////////////////////
 //以下为汇编函数
