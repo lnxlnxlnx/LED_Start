@@ -52,6 +52,7 @@ int main(void)
 	//TIM2_Cap_Init(0XFFFF, 72 - 1);	 //以1Mhz的频率计数，溢出周期约为 65.5ms。
 	Adc_Init();					 // ADC初始化
 
+
 	while (1)
 	{
 		delay_ms(200);

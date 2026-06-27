@@ -205,7 +205,7 @@ extern void adc_irq_func(void);
 #define USE_REMOTE   1
 #define USE_REMOTE_SMG_IRQ 1
 #define USE_IC_UPDATE 0
-#define USE_ADC_REF  0
+#define USE_ADC_REF  1
 #define USE_SMG 1
 void TIM3_IRQHandler(void)
 {

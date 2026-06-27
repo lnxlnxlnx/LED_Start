@@ -3,6 +3,7 @@
 #include "smg.h"
 #include "led.h"
 #include "timer.h"
+#include "stm32f10x_adc.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK NANO STM32开发板
@@ -19,6 +20,45 @@
 //初始化ADC	
 //这里我们仅以规则通道为例
 //我们默认仅开启通道9	
+
+void My_ADC_Init(void)
+{
+	//Adc_Init(); // ADC初始化
+	// 这里可以添加定时器触发ADC转换的配置
+	// 例如使用TIM3每秒触发一次ADC转换
+	//TIM3_Init(7199, 9999); // 1Hz触发频率
+	// 1. 开启时钟
+	GPIO_InitTypeDef GPIO_InitStructure;
+	ADC_InitTypeDef ADC_InitStructure;
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_ADC1, ENABLE); // 使能GPIOB和ADC1时钟
+	
+	// 2.// 配置PB9为模拟输入
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	// 3. 配置预分频器和采样时间
+	ADC_InitStructure.ADC_Mode = ADC_Mode_Independent; // 独立模式
+	ADC_InitStructure.ADC_ScanConvMode = DISABLE;
+	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE; // 单次转换模式
+	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStructure.ADC_NbrOfChannel = 1; // 仅转换一个通道
+	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None; // 软件触发
+	ADC_Init(ADC1, &ADC_InitStructure);
+
+	// 4. 配置通道9的采样时间
+	ADC_RegularChannelConfig(ADC1, ADC_CH9, 1, ADC_SampleTime_239Cycles5); // 通道9，采样时间239.5周期
+
+	// 5. 开启ADC
+	ADC_Cmd(ADC1, ENABLE);
+
+	// 6. 校准ADC
+	ADC_ResetCalibration(ADC1); // 复位校准
+	while (ADC_GetResetCalibrationStatus(ADC1)); // 等待复位校准完成
+
+	ADC_StartCalibration(ADC1); // 开始校准
+	while (ADC_GetCalibrationStatus(ADC1)); // 等待校准完成
+}
 void  Adc_Init(void)
 { 	
 	//先初始化IO口
