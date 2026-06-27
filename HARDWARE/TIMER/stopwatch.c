@@ -28,6 +28,8 @@
 #include "smg.h"       // LED_SMG_WriteNum/LED_SMG_WriteSeg/LED_SMG_Clear
 #include "timer.h"     // g_tim3, TIMER_MS() 宏 — 自动适配不同 arr/psc
 #include <stdio.h>     // printf()
+#include "dma.h"
+#include "usart.h"
 
 /* ======================== 调试开关 ======================== */
 #define STOPWATCH_DEBUG    1       // 1=串口输出状态变化, 0=关闭
@@ -51,7 +53,8 @@ static u8  g_key_debounce;      // 按键消抖时间对应多少个 tick
 #define K_IDX_KEY1   0
 #define K_IDX_KEY2   1
 #define K_IDX_WKUP   2
-#define KEY_COUNT    3
+#define K_IDX_KEY0   3
+#define KEY_COUNT    4
 
 /* ======================== 按键消抖结构 ======================== */
 typedef struct {
@@ -265,6 +268,7 @@ static void sw_ReadKeys(void)
     u8 i;
 
     /* 读原始电平, 统一转为 1=按下 */
+    raw[K_IDX_KEY0] = !KEY0;    // PC9 低电平按下
     raw[K_IDX_KEY1] = !KEY1;    // PC9 低电平按下
     raw[K_IDX_KEY2] = !KEY2;    // PD2 低电平按下
     raw[K_IDX_WKUP] = WK_UP;    // PA0 高电平按下
@@ -308,6 +312,31 @@ static void sw_ReadKeys(void)
 static void sw_ProcessKey(u8 idx)
 {
     switch (idx) {
+    case K_IDX_KEY0:
+    //#if USE_DMA_USART
+            printf("\r\nDMA DATA:\r\n ");
+            USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE); //使能串口1的DMA发送
+            MY_DMA_Enable(DMA1_Channel4);//开始一次DMA传输！
+
+            //等待DMA传输完成，此时我们来做另外一些事，点灯
+            //实际应用中，传输数据期间，可以执行另外的任务
+            while (1)
+            {
+                if (DMA_GetFlagStatus(DMA1_FLAG_TC4) == SET) //等待通道4传输完成
+                {
+                    DMA_ClearFlag(DMA1_FLAG_TC4); //清除通道4传输完成标志
+                    break;
+                }
+
+                LED2 = !LED2;
+                delay_ms(50);
+            }
+
+            LED2 = 1;
+            printf("Transimit Finished!\r\n");//提示传送完成
+        /* 暂时未定义功能 */
+    //#endif
+        break;
 
     case K_IDX_KEY1:
         if (g_state == SW_RUNNING) {
